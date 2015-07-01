@@ -1,6 +1,6 @@
 
 from __future__ import division
-import codecs, re, nltk, pylab, numpy, operator, csv
+import io, re, nltk, pylab, numpy, operator
 from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.svm import LinearSVC
@@ -68,7 +68,7 @@ def read_file(path):
     labels -> list [0,1,0,0 ....]
     tweets -> list of string [tweet1, tweet2, ....]
     """
-    with codecs.open(path, 'r', encoding='utf-8', errors='ignore') as data:
+    with io.open(path, mode='r', encoding='utf-8', errors='ignore') as data:
         tweets, labels = [],[]
         for line in data:
             line = line.split(',')
@@ -340,7 +340,7 @@ for model in models:
 
 #################################################################################
 # part 3.1: compare different feature frequency, min_range
-
+'''
 # feature threshold cut-off, min_df
 min_range = numpy.arange(0,0.4,0.03).tolist()
 for min_df in min_range:
@@ -375,7 +375,7 @@ for min_df in min_range:
         print "Accuracy:", accuracy/x_fold, "correct:", correct/x_fold, "total:", total/x_fold
         for lab in per_label:
             print "Label", lab, " => Precision:", per_label[lab][0]/x_fold, "Recall:", per_label[lab][1]/x_fold, "F1:", per_label[lab][2]/x_fold
-
+'''
 #################################################################################
 # part 3.2: compare different feature frequency, max_df
 '''
@@ -443,3 +443,4 @@ for model in models:
     for lab in per_label:
         print "Label", lab, " => Precision:", per_label[lab][0]/x_fold, "Recall:", per_label[lab][1]/x_fold, "F1:", per_label[lab][2]/x_fold
 '''
+
