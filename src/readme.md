@@ -1,7 +1,7 @@
 ## *. tweets_cleaning.py
 run experiments on training data set (labeled tweets) 
 
-# processing 12 months asthma twitter data set 
+# Processing 12 months asthma twitter data set 
 
 ## 1. tweets_mongo.py
 read tweets from mongoDB, month by month.
@@ -12,5 +12,11 @@ location resolution, only keep tweets whose location can be recognized as US sta
 tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone
 
 ## 3. tweets_prediction.py
-predicting each tweet is relevant or irrelevant
+predicting each tweet is relevant (1) or irrelevant (0)
 prediction+'|'+tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone
+
+## 4. tweets_mysql.py
+load prediction results into mysql.
+group by 'prediction': relevant / irrelevant 
+         'location': states name
+         'created_at': daily / weekly / monthly   
