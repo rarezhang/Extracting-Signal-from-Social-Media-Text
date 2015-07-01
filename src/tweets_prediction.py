@@ -212,7 +212,7 @@ def performance(label,prediction):
 ################################################################################################
 
 
-# Part 5: get label for the data set
+# Part *: get label for the data set
 ## training part
 path = "..//data//training//tweetsAnnotation.csv"
 labels, tweets = read_file(path) # labels: list, tweets: list of string
@@ -227,26 +227,33 @@ clf = LinearSVC()
 clf.fit(data, labels)
 
 
-# predicting part
-## input file: tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone
-input_path = "..//data//test_states"
-output_path = '..//data//test_states_pred'
+## predicting part
+#### input file: tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone
 
-with io.open(input_path, 'r', encoding='utf-8', errors='ignore', newline='\n') as infile:
-    for line in infile:
-        
-        line = line.split('|')
-             
-        tweet_id,created_at,text,location,time_zone = line[0],line[1],line[2],line[3],line[4]
-        text = pre_process(text)
-        # predict label for a single tweet
-        tweet_vec = v.fit_transform([text]).toarray() # transform single tweet to array
-        prediction = clf.predict(tweet_vec)[0] # get prediction for a single tweet
-  
-        #try:location = line[3][:-1] # remove the end of line
-        #except:state = ' '
-        with io.open(output_path, mode='a',encoding='utf-8') as f:
-            f.write(prediction+'|'+tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone) #do not need '\n'
+input_files = ['2013Nov_states','2013Dec_states','2014Jan_states','2014Feb_states', '2014Mar_states', '2014Apr_states', '2014May_states', '2014Jun_states']
 
- 
+
+for file_name in input_files:
+
+    input_path = "..//data//" + file_name
+    output_path = "..//data//" + file_name + "_pred"
+
+    with io.open(input_path, 'r', encoding='utf-8', errors='ignore', newline='\n') as infile:
+        for line in infile:       
+            line = line.split('|')
+            #print len(line)
+            if len(line) != 5:  ## don't need this if tweets_get_states.py didn't get empty line
+                continue
+                
+            tweet_id,created_at,text,location,time_zone = line[0],line[1],line[2],line[3],line[4]
+            text = pre_process(text)
+            # predict label for a single tweet
+            tweet_vec = v.fit_transform([text]).toarray() # transform single tweet to array
+            prediction = clf.predict(tweet_vec)[0] # get prediction for a single tweet
+      
+            #try:location = line[3][:-1] # remove the end of line
+            #except:state = ' '
+            with io.open(output_path, mode='a',encoding='utf-8') as f:
+                f.write(prediction+'|'+tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone) #do not need '\n'
+
 
