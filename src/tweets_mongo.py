@@ -1,7 +1,7 @@
 __author__ = 'wlz'
 
 import pymongo, re, codecs
-from convert_twitter_timedate import *
+from utility import *
 
 
 
