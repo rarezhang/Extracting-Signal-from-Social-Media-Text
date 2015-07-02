@@ -111,7 +111,7 @@ for file_name in files:
             if location:
                 with io.open(output_path, mode='a',encoding='utf-8') as f:
                     tweet_id, created_at, text, time_zone = line[0], line[1], line[2], line[4]
-                    f.write(tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone) # don't need '/n'
+                    f.write(tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone) # don't need /n, since time_zone already have /n 
 
 
 

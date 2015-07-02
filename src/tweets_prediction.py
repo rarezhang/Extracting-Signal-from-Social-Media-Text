@@ -231,7 +231,7 @@ clf.fit(data, labels)
 #### input file: tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone
 
 input_files = ['2013Nov_states','2013Dec_states','2014Jan_states','2014Feb_states', '2014Mar_states', '2014Apr_states', '2014May_states', '2014Jun_states']
-
+#input_files = ['test']
 
 for file_name in input_files:
 
@@ -245,15 +245,15 @@ for file_name in input_files:
             if len(line) != 5:  ## don't need this if tweets_get_states.py didn't get empty line
                 continue
                 
-            tweet_id,created_at,text,location,time_zone = line[0],line[1],line[2],line[3],line[4]
+            tweet_id,created_at,text,location,time_zone = line[0],line[1],line[2],line[3],line[4].strip()
             text = pre_process(text)
             # predict label for a single tweet
             tweet_vec = v.fit_transform([text]).toarray() # transform single tweet to array
             prediction = clf.predict(tweet_vec)[0] # get prediction for a single tweet
-      
-            #try:location = line[3][:-1] # remove the end of line
-            #except:state = ' '
+
+            ## after prediction, remove all non utf-8: for loading into mysql
+            
             with io.open(output_path, mode='a',encoding='utf-8') as f:
-                f.write(prediction+'|'+tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone) #do not need '\n'
+                f.write('"'+prediction+'"|"'+tweet_id+'"|"'+created_at+'"|"'+text+'"|"'+location+'"|"'+time_zone+'"'+'\n') 
 
 
