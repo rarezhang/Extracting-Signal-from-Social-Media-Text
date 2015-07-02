@@ -10,7 +10,7 @@ from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import cross_validation
 from sklearn.metrics import classification_report
-
+from utility import *
 
 """
 predicting each tweet is relevant or irrelevant
@@ -231,7 +231,7 @@ clf.fit(data, labels)
 #### input file: tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone
 
 input_files = ['2013Nov_states','2013Dec_states','2014Jan_states','2014Feb_states', '2014Mar_states', '2014Apr_states', '2014May_states', '2014Jun_states']
-#input_files = ['test']
+input_files = ['2013Dec_states','2014Jan_states','2014Feb_states', '2014Mar_states', '2014Apr_states', '2014May_states', '2014Jun_states']
 
 for file_name in input_files:
 
@@ -245,13 +245,17 @@ for file_name in input_files:
             if len(line) != 5:  ## don't need this if tweets_get_states.py didn't get empty line
                 continue
                 
-            tweet_id,created_at,text,location,time_zone = line[0],line[1],line[2],line[3],line[4].strip()
+            tweet_id,created_at,text,location,time_zone = line[0],line[1],line[2],line[3],line[4].strip() # strip: remove \n
+            
             text = pre_process(text)
             # predict label for a single tweet
             tweet_vec = v.fit_transform([text]).toarray() # transform single tweet to array
             prediction = clf.predict(tweet_vec)[0] # get prediction for a single tweet
-
-            ## after prediction, remove all non utf-8: for loading into mysql
+            
+            #text = text.replace('"', '')  #remove " for mysql, use " as ENCLOSED
+            #time_zone = time_zone.replace('"', '')
+            text = strip_non_ascii(text)
+            time_zone = strip_non_ascii(time_zone)            
             
             with io.open(output_path, mode='a',encoding='utf-8') as f:
                 f.write('"'+prediction+'"|"'+tweet_id+'"|"'+created_at+'"|"'+text+'"|"'+location+'"|"'+time_zone+'"'+'\n') 
