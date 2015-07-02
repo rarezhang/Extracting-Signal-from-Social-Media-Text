@@ -39,9 +39,8 @@ time_zone VARCHAR(255)
 
 # load data infile
 """
-LOAD DATA LOCAL INFILE '/home/wenli/Projects/tweetsnlp/data/pred' 
-INTO TABLE twitter
-CHARACTER SET UTF8        
+LOAD DATA LOCAL INFILE '/home/wenli/Projects/tweetsnlp/data/2014Jun_states_pred' 
+INTO TABLE twitter       
 FIELDS TERMINATED BY '|'
 ENCLOSED BY '"'  
 LINES TERMINATED BY '\n';
@@ -60,7 +59,10 @@ ALTER TABLE twitter MODIFY created_at DATETIME;
 # build indexes: tweet_id, created_at, location, prediction 
 #### DROP INDEX tweet_id ON twitter;
 """
-ALTER IGNORE TABLE twitter ADD UNIQUE INDEX tweet_id (tweet_id); # unique index, remove duplicates
+ALTER TABLE twitter ENGINE MyISAM;
+ALTER IGNORE TABLE twitter ADD UNIQUE KEY tweet_id(tweet_id);
+ALTER TABLE twitter ENGINE InnoDB;
+
 CREATE INDEX created_at on twitter (created_at);
 CREATE INDEX location on twitter (location);
 CREATE INDEX prediction on twitter (prediction);
