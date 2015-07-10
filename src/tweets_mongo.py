@@ -49,10 +49,7 @@ for regexp in reg:
 		            time_zone = re.sub('[\W_]+',' ', time_zone) # remove everything except alphanumeric
 		        except:
 		            time_zone = 'None'
-		        
+		
 		        #print tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone+'\n'	
 		        f.write(tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone+'\n')
-		    
-		        
-		    
-
+		

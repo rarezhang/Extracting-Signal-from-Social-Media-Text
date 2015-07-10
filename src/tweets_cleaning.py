@@ -1,6 +1,6 @@
 
 from __future__ import division
-import io, re, nltk, pylab, numpy, operator
+import io, re, nltk, numpy, operator
 from scipy.sparse import lil_matrix
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.svm import LinearSVC
@@ -148,6 +148,7 @@ def sort_word_dic(dic):
     # sort the word count based on the # of words
     return sorted(dic.items(), key=lambda tup: tup[1], reverse=True) # list of tuples
 
+'''
 def plot_word_bar(dic): # dic: list of two tuples: [(words),(counts)]
     dic = zip(*dic) # return a list of two tuples: [(words),(counts)]
     pylab.figure()
@@ -158,6 +159,7 @@ def plot_word_bar(dic): # dic: list of two tuples: [(words),(counts)]
     ax.set_xticks(numpy.arange(len(dic[0][:top_x])) + width/2)
     ax.set_xticklabels(dic[0][:top_x], rotation=90)
     pylab.show()
+'''
 
 # Model negation in features
 def feature_negation(tweet_list):

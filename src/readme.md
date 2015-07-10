@@ -17,6 +17,6 @@ prediction+'|'+tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone
 
 ## 4. tweets_mysql.py
 load prediction results into mysql.
-group by 'prediction': relevant / irrelevant 
+group by 'prediction': relevant / irrelevant
          'location': states name
-         'created_at': daily / weekly / monthly   
+         'created_at': daily / weekly / monthly

@@ -1,5 +1,11 @@
-import MySQLdb
+#!/user/bin/env python
+# coding=utf-8
+"""
+python connect with mysql
+"""
 
+import MySQLdb
+import io
 
 
 # connect python with mysql
@@ -7,7 +13,7 @@ db = MySQLdb.connect(host="localhost",
                      user="root",
                      passwd='qwer1234',
                      db='TWITTER',   # name of the db
-                     local_infile = 1) 
+                     local_infile = 1)
 # create a Cursor object
 ## Cursor can execute all the queries
 cur = db.cursor()
@@ -40,9 +46,9 @@ time_zone VARCHAR(255)
 # load data infile
 """
 LOAD DATA LOCAL INFILE '/home/wenli/Projects/tweetsnlp/data/2014Jun_states_pred' 
-INTO TABLE twitter       
+INTO TABLE twitter
 FIELDS TERMINATED BY '|'
-ENCLOSED BY '"'  
+ENCLOSED BY '"'
 LINES TERMINATED BY '\n';
 """
 
@@ -73,11 +79,43 @@ CREATE INDEX prediction on twitter (prediction);
 '''
 sql = "show columns in twitter;"
 '''
+
+
 #############################################################################################
-# run the qurey 
+'''
+# twitter data group by "created_at": year / month
+# compare with pollution data
+sql = ('select count(prediction), location, year(created_at), month(created_at) '
+       'from twitter '
+       'where prediction = 1 '
+       'group by year(created_at), month(created_at), location '
+       'order by location;')
+
+# run the qurey
 cur.execute(sql)
 
-'''
 for row in cur.fetchall():
-    print row
+    ## location , year/month, count(prediction)
+    print row[1],str(row[2])+'/'+str(row[3]),row[0]
 '''
+#############################################################################################
+
+# twitter data group by "location"
+# compare with asthma data
+
+output_path = output_path = "..//data//twitter_agg_state" 
+
+sql = ('select count(prediction), location '
+       'from twitter '
+       'where prediction = 1 '
+       'group by location '
+       'order by location;')
+
+# run the qurey
+cur.execute(sql)
+
+for row in cur.fetchall():
+    ## location , count(prediction)
+    state,num_tweets = row[1],unicode(row[0])
+    with io.open(output_path, mode='a',encoding='utf-8') as f:
+        f.write('"'+state+'","'+num_tweets+'"'+'\n') 
