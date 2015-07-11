@@ -1,8 +1,11 @@
+# run experiments on training data set
 ## *. tweets_cleaning.py
-run experiments on training data set (labeled tweets) 
+###1. 4500 asthma tweets: could run it on ISTA 555 project, already got results; also can use this one, change data path to tweetsAnnotation.csv
+###2. e-cigarette: find "# e-cigarette"
+###3. 500 fresh asthma tweets: find "# manually re-label 500 fresh tweets"
+
 
 # Processing 12 months asthma twitter data set 
-
 ## 1. tweets_mongo.py
 read tweets from mongoDB, month by month.
 tweet_id+'|'+created_at+'|'+text+'|'+location+'|'+time_zone

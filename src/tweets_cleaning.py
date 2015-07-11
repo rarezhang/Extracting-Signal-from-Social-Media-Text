@@ -1,3 +1,8 @@
+"""
+copied from pcci pcci_tweets_cleaning.py
+(1)modified for the e-cigarette data set. Use use e-cigarette data as training data set.
+(2)manually re-label 500 fresh tweets (never been touched before), rerun major experiments
+"""
 
 from __future__ import division
 import io, re, nltk, numpy, operator
@@ -12,10 +17,7 @@ from sklearn import cross_validation
 from sklearn.metrics import classification_report
 
 
-"""
-copied from pcci pcci_tweets_cleaning.py
-modified for the e-cigarette data set. Use as training data set.
-"""
+
 
 
 def tokenizer(tweet):
@@ -98,7 +100,7 @@ def verb_noun_hash_count(tweets):
     noun_dic, verb_dic, hash_dic = nltk.FreqDist(), nltk.FreqDist(), nltk.FreqDist()
     pat = r'(?:\#+[\w_]+[\w\'_\-]*[\w_]+)'
     for tweet in tweets:
-        tweet = tweet.split() #string to list of word
+        tweet = tweet.split()  # string to list of word
         allhash = [x for x in tweet if re.search(pat, x)] # find all hash tag
         pos_list = pos_tag(tweet)  # pos tag: tup of list: [word, pos]
         for word, pos in pos_list:
@@ -111,7 +113,7 @@ def verb_noun_hash_count(tweets):
     return noun_dic, verb_dic, hash_dic
 
 
-def conditional_proportions(sorted_relevant,sorted_irrelevant):
+def conditional_proportions(sorted_relevant, sorted_irrelevant):
     """
     calculate conditional proportions for relevant asthma tweets / irrelevant asthma tweets
     """
@@ -119,7 +121,7 @@ def conditional_proportions(sorted_relevant,sorted_irrelevant):
     irrelevant = dict(sorted_irrelevant)
     relevant_conditional_proportions = {}
     irrelevant_conditional_proportions = {}
-    ## for the relevant
+    # for the relevant
     for key in relevant:
             numerator = relevant[key]
             if key in irrelevant:
@@ -129,37 +131,24 @@ def conditional_proportions(sorted_relevant,sorted_irrelevant):
                 denominator = relevant[key]
             # calculate the conditional proportions
             relevant_conditional_proportions[key] = numerator / denominator
-    ## for the #sad hashtags
+    # for the irrelevant
     for key in irrelevant:
             numerator = irrelevant[key]
             if key in relevant:
-                # hashtags appear with both #happy and #sad
                 denominator = relevant[key] + irrelevant[key]
             else:
                 denominator = irrelevant[key]
             # calculate the conditional proportions
             irrelevant_conditional_proportions[key] = numerator / denominator
-    # sort the hashtags associated with #happy and #sad in descending order of their conditional proportions
     sorted_relevant_conditional_proportions = sorted(relevant_conditional_proportions.items(), key=operator.itemgetter(1), reverse=True)
     sorted_irrelevant_conditional_proportions = sorted(irrelevant_conditional_proportions.items(), key=operator.itemgetter(1), reverse=True)
-    return sorted_relevant_conditional_proportions,sorted_irrelevant_conditional_proportions
+    return sorted_relevant_conditional_proportions, sorted_irrelevant_conditional_proportions
 
 def sort_word_dic(dic):
     # sort the word count based on the # of words
     return sorted(dic.items(), key=lambda tup: tup[1], reverse=True) # list of tuples
 
-'''
-def plot_word_bar(dic): # dic: list of two tuples: [(words),(counts)]
-    dic = zip(*dic) # return a list of two tuples: [(words),(counts)]
-    pylab.figure()
-    ax = pylab.subplot(111)
-    top_x = 30
-    width=0.8
-    ax.bar(range(len(dic[0][:top_x])),dic[1][:top_x], width=width)
-    ax.set_xticks(numpy.arange(len(dic[0][:top_x])) + width/2)
-    ax.set_xticklabels(dic[0][:top_x], rotation=90)
-    pylab.show()
-'''
+
 
 # Model negation in features
 def feature_negation(tweet_list):
@@ -223,7 +212,7 @@ def get_features(labels, tweets, vb = None, min = 1, max = 1.0, ngram = (1,1)):
     return data, target, count_vec.vocabulary_
 
 
-def performance(label,prediction):
+def performance(label, prediction):
     side_by_side = numpy.transpose(numpy.array([label.tolist(), prediction.tolist()]))
     total = 0
     correct = 0
@@ -251,7 +240,7 @@ def performance(label,prediction):
         f1 = 0
         if p != 0 and r != 0:
             f1 = 2*p*r / (p + r)
-        #print "Label", l, " => Precision:", p, "Recall:", r, "F1:", f1
+        # print "Label", l, " => Precision:", p, "Recall:", r, "F1:", f1
         counts_per_label[l]=(p,r,f1) # precision, recall, f1
     return acc, correct, total, counts_per_label
 
@@ -259,9 +248,10 @@ def performance(label,prediction):
 ################################################################################################
 ################################################################################################
 ################################################################################################
-
+# e-cigarette
 ## tweets cleaning
-path = "..//data//ecigarette_training.csv"
+'''
+path = "..//data//training//ecigarette_training.csv"
 
 
 labels, tweets = read_file(path) # labels: list, tweets: list of string
@@ -272,7 +262,7 @@ labels, tweets = read_file(path) # labels: list, tweets: list of string
 
 data, labels, vb_train = get_features(labels, tweets)
 print 'Number of features:', len(vb_train.keys())
-
+'''
 #################################################################################
 # part 1: simple test
 '''
@@ -284,6 +274,7 @@ print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 #################################################################################
 # part 2.1: compare different classifiers
 '''
+
 ### different molds, classification report matrix
 models = [LinearSVC, LogisticRegression, MultinomialNB, Perceptron]
 target_names = ['irrelevant', 'relevant']
@@ -445,4 +436,88 @@ for model in models:
     for lab in per_label:
         print "Label", lab, " => Precision:", per_label[lab][0]/x_fold, "Recall:", per_label[lab][1]/x_fold, "F1:", per_label[lab][2]/x_fold
 '''
+################################################################################################
+################################################################################################
+################################################################################################
+################################################################################################
+# manually re-label 500 fresh tweets (never been touched before), rerun major experiments
+'''
+# part 1: simple test: results: 85% acc
+path = "..//data//training//asthma_500.csv"
 
+labels, tweets = read_file(path) # labels: list, tweets: list of string
+#tweets = feature_negation(tweets)
+#tweets = feature_tweet_length(tweets)
+#tweets = feature_pos(tweets)
+
+data, labels, vb_train = get_features(labels, tweets)
+print 'Number of features:', len(vb_train.keys())
+
+### x-fold validation
+clf = LinearSVC()
+scores = cross_validation.cross_val_score(clf, data, labels, cv=5)
+print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
+'''
+#################################################################################
+# part 2
+# get prediction for 500 fresh asthma tweets
+## training part
+path = "..//data//training//tweetsAnnotation.csv"
+labels, tweets = read_file(path) # labels: list, tweets: list of string
+#tweets = feature_negation(tweets)
+#tweets = feature_tweet_length(tweets)
+#tweets = feature_pos(tweets)
+
+data, labels, vb_train = get_features(labels, tweets)
+v = CountVectorizer(vocabulary=vb_train)  # get the feature vector
+
+
+
+####################################
+## prediction part
+input_path = "..//data//training//asthma_500.csv"  # 500 fresh tweets
+####################################
+## prediction part 1: get performance
+
+test_labels, test_tweets = read_file(input_path) # labels: list, tweets: list of string
+#tweets = feature_negation(tweets)
+#tweets = feature_tweet_length(tweets)
+#tweets = feature_pos(tweets)
+test_data, test_labels, test_vb_train = get_features(test_labels, test_tweets, vb=vb_train)
+
+models = [LogisticRegression, LinearSVC, LogisticRegression, MultinomialNB, Perceptron, DecisionTreeClassifier, ExtraTreesClassifier, RandomForestClassifier]
+
+
+for model in models:
+    accuracy, correct, total = 0, 0, 0
+    per_label = {u'1': [0.0, 0.0, 0], u'0': [0.0, 0.0, 0]}
+    print model.__name__
+    clf = model()
+    if model.__name__ in ["DecisionTreeClassifier", "ExtraTreesClassifier", "RandomForestClassifier"]:
+        clf.fit(data.toarray(), labels)
+        test_pred = clf.predict(test_data.toarray())
+    else:
+        clf.fit(data, labels)  # fit model with 4500 tweets
+        test_pred = clf.predict(test_data)   # predict 500 fresh tweets
+    accuracy, correct, total, per_label = performance(test_labels, test_pred)
+    print "Accuracy:", accuracy, "correct:", correct, "total:", total
+    for lab in per_label:
+        print "Label", lab, " => Precision:", per_label[lab][0], "Recall:", per_label[lab][1], "F1:", per_label[lab][2]
+
+####################################
+'''
+## prediction part 2: write out file (adjust label)
+output_path = "..//data//training//asthma_500_prediction.csv"
+clf = LinearSVC()
+clf.fit(data, labels)
+with io.open(input_path, 'r', encoding='utf-8', errors='ignore', newline='\n') as infile:  # \n: LF
+    for line in infile:
+        line = line.split(',')
+        label, text = line[0], line[1].strip()  # strip: remove \n
+        text = pre_process(text)
+        # predict label for a single tweet
+        tweet_vec = v.fit_transform([text]).toarray()  # transform single tweet to array
+        prediction = clf.predict(tweet_vec)[0]  # get prediction for a single tweet
+        with io.open(output_path, mode='a', encoding='utf-8') as f:
+            f.write('"'+prediction+'","'+label+'","'+text+'"'+'\n')
+'''
