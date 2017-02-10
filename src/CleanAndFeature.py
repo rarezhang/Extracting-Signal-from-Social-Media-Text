@@ -219,7 +219,6 @@ class CleanAndFeature:
         """
         return 1 if re.search("([a-zA-Z])\\1{2,}", token) else 0
 
-    # @load_or_make   # todo
     def feature_token_based(self, text):
         """
         token based features: check tokens one by one
@@ -318,7 +317,6 @@ class CleanAndFeature:
         """
         return self.feature_word_ngram(text, vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
 
-    #@load_or_make todo
     def feature_word_ngram(self, text, vb=None, anly='word', mindf=1, maxdf=1.0, ngram=(1,4)):
         """
         word n-gram [1-4], won't include punctuations
