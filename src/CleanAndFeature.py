@@ -343,8 +343,7 @@ class CleanAndFeature:
                     feature_char_ngram, feature_word_ngram)
 
     # todo: way to tuning feature parameters
-    # todo: make feature @load and make  (training or not )
-    def make_feature(self, path_feature, remake=False):
+    def make_feature(self, path_feature, remake=False, training_set=True):
         """
 
         :return:
@@ -361,7 +360,17 @@ class CleanAndFeature:
                 self.text, text = tee(self.text)
                 text = text if feature_name == 'feature_token_based' else self.clean()  # generators
                 # make feature
-                feature = f(self, text)
+                if 'ngram' in feature_name:
+                    vocabulary_name = ''.join((feature_name, '_vocabulary'))
+                    vocabulary_path = join_file_path(path_feature, vocabulary_name)
+                    if training_set:  # dump vocabulary
+                        feature, vocabulary = f(self, text)
+                        dump_pickle(vocabulary_path, vocabulary)
+                    else:
+                        vocabulary = load_pickle(vocabulary_path)
+                        feature, _ = f(self, text, vb=vocabulary)
+                else:
+                    feature = f(self, text)
                 dump_pickle(feature_path, feature)
 
     def combine_feature(self, path_feature, feature_type='ALL'):
@@ -386,11 +395,7 @@ class CleanAndFeature:
             print("loading feature: {}".format(feature_name))
             feature_path = join_file_path(path_feature, feature_name)
             # load feature
-            # 'ngram' feature return feature and vocabulary todo: if not training, use vocabulary
-            if 'ngram' in feature_name:
-                feature, _ = load_pickle(feature_path)
-            else:
-                feature = load_pickle(feature_path)
+            feature = load_pickle(feature_path)
             print("{} shape: {}".format(feature_name, feature.shape))
             # combine feature
             if result is None:
@@ -398,6 +403,7 @@ class CleanAndFeature:
             else:  # concatenate features
                 result = np.concatenate((result, feature), axis=1)  # column wise
         return result
+        # todo: normalize feature matrix to [0,1]
 
 
 
