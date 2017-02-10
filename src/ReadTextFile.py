@@ -29,6 +29,6 @@ class ReadTextFile:
         :param col: int, index of 'line' list
         :return:
         """
-        assert isinstance(col, int) and 0 <= col, 'check index'
+        assert isinstance(col, int) and 0 <= col, 'check index'  # todo: check col < len(line-1)
         for line in self.read():
             yield line[col]
