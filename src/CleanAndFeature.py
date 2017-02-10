@@ -1,10 +1,74 @@
 import nltk, re, string
 import numpy as np
+from itertools import tee
 from functools import reduce
 from sklearn.feature_extraction.text import CountVectorizer
 
 punctuation = string.punctuation
 negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
+
+# ------------------- utils --------------------------
+import os, errno, pickle
+def join_file_path(dir_path, file_name):
+    """
+    Join path components
+    :return:
+    """
+    assert os.path.isdir(dir_path), 'first argument should be a dir path'
+    return os.path.join(dir_path, file_name)
+
+
+def nested_fun(funs, value):
+    """
+
+    :param funs: list of functions (iterable)
+    :param value:
+    :return: f1(f2(value))
+    """
+    return reduce(lambda res, f: f(res), funs, value)
+
+def file_remove(path):
+    """
+
+    :param path:
+    :return:
+    """
+    try:
+        os.remove(path)
+    except OSError as e:  # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
+            raise  # re-raise exception if a different error occurred
+
+
+def check_file_exist(path):
+    """
+    check if ``file`` exists
+    :param path:
+    :return: T/F
+    """
+    return os.path.isfile(path)
+
+
+def dump_pickle(path, data):
+    """
+    save data as binary file
+    :param path:
+    :param data:
+    :return:
+    """
+    with open(path, 'wb') as f:
+        pickle.dump(data, f, protocol=3)  # protocol 3 is compatible with protocol 2, pickle_load can load protocol 2
+
+def load_pickle(path):
+    """
+    :param path:
+    :return:
+    """
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+# -------------------------------------------------
 
 class CleanAndFeature:
     """
@@ -20,15 +84,7 @@ class CleanAndFeature:
         """
         self.text = text
 
-    def _nested_fun(self, funs, value):
-        """
-
-        :param funs: list of functions (iterable)
-        :param value:
-        :return: f1(f2(value))
-        """
-        return reduce(lambda res, f: f(res), funs, value)
-
+    # ----------------- helper methods ------------------------------------
     def _tokenizer(self, text_string):
         """
         tokenize each single tweet
@@ -38,14 +94,6 @@ class CleanAndFeature:
         return self.tknz.tokenize(text_string)
 
     # ------------------- support methods for clean() -------------------
-    def _convert_lower_case(self, token):
-        """
-        convert all characters to lower case
-        :param token:
-        :return:
-        """
-        return token.lower()
-
     def _convert_user_name(self, token):
         """
         convert @username to single token  _at_user_
@@ -90,35 +138,47 @@ class CleanAndFeature:
         except:
             return token
 
-    def _convert_negation(self, str):
+    def _convert_lower_case(self, text_string):
+        """
+        convert all characters to lower case
+        :param token:
+        :return:
+        """
+        return text_string.lower()
+
+    def _convert_negation(self, text_string):
         """
         defined a negated context as a segment of a text that
         starts with a negation word (e.g., no, shouldn't)
         and ends with one of the punctuation marks: .,:;!?
         add `_not_` prefix to each word following the negation word
-        :param str: string -> single tweet
+        :param str: string
         :return:
         """
-        str += '.'  # need an end sign for a str
-        return re.sub(negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), str,
+        text_string += '.'  # need an end sign for a str
+        return re.sub(negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), text_string,
                       flags=re.IGNORECASE)
 
-    #@load_or_make  # todo
     # todo remove all non-ascii; remove all non-utf8 ?  may not
     def clean(self):
         """
 
         :return:
         """
-        # token based funs
-        funs = (self._convert_lower_case, self._convert_user_name, self._convert_url, self._convert_number, self._convert_duplicate_characters, self._convert_lemmatization)
-        for ts in self.text:  # ts = text_string
+        # text = self.text
+        self.text, text = tee(self.text)  # keep generator
+        token_based_funs = (self._convert_user_name, self._convert_url,
+                            self._convert_number, self._convert_duplicate_characters,
+                            self._convert_lemmatization)
+        string_based_funs = (self._convert_lower_case, self._convert_negation)
+        for ts in text:  # ts = text_string
             token_list = self._tokenizer(ts)  # return list
-            token_list = [self._nested_fun(funs, tk) for tk in token_list]
-            yield self._convert_negation(' '.join(token_list))  # _convert_negation is string based fun
+            token_list = [nested_fun(token_based_funs, tk) for tk in token_list]
+            text_string = ' '.join(token_list)  # return string
+            yield nested_fun(string_based_funs, text_string)
 
     # ------------------ feature before clean -----------------
-    def _feature_retweet(self, token):
+    def _retweet(self, token):
         """
         if the token is 'RT'
         :param token:
@@ -126,7 +186,7 @@ class CleanAndFeature:
         """
         return 1 if re.fullmatch('RT', token) else 0
 
-    def _feature_hashtag(self, token):
+    def _hashtag(self, token):
         """
         if the token is a hash-tagged word
         :param token:
@@ -134,7 +194,7 @@ class CleanAndFeature:
         """
         return 1 if re.fullmatch('(?:\#+[\w_]+[\w\'_\-]*[\w_]+)', token) else 0
 
-    def _feature_upper(self, token):
+    def _upper(self, token):
         """
         if all the character in the token is in uppercase
         :param token:
@@ -142,7 +202,7 @@ class CleanAndFeature:
         """
         return 1 if token.isupper() else 0
 
-    def _feature_punctuation(self, token):
+    def _punctuation(self, token):
         """
         number of punctuation in the token
         :param token
@@ -150,7 +210,7 @@ class CleanAndFeature:
         """
         return sum([1 for tk in token if tk in punctuation])
 
-    def _feature_elongated(self, token):
+    def _elongated(self, token):
         """
         if the token is an elongated word
         similar to _convert_duplicate_characters
@@ -160,15 +220,15 @@ class CleanAndFeature:
         return 1 if re.search("([a-zA-Z])\\1{2,}", token) else 0
 
     # @load_or_make   # todo
-    def feature_token_based(self): # todo: return entire numpy array
+    def feature_token_based(self, text):
         """
         token based features: check tokens one by one
         :return:
         """
-        funs = (self._feature_retweet, self._feature_hashtag, self._feature_upper, self._feature_punctuation, self._feature_elongated)
+        funs = (self._retweet, self._hashtag, self._upper, self._punctuation, self._elongated)
         # ts = text_string; tk = token
-        return np.asarray([[sum([f(tk) for tk in self._tokenizer(ts)]) for f in funs] for ts in self.text])
-        # for ts in self.text:
+        return np.asarray([[sum([f(tk) for tk in self._tokenizer(ts)]) for f in funs] for ts in text])
+        # for ts in text:
             # token_list = self._tokenizer(ts)
             # results = []
             # for f in funs:
@@ -176,7 +236,7 @@ class CleanAndFeature:
             #     results.append(result)
             # yield results  # feature values for a single tweet
 
-    # emoticons
+    # todo emoticons
 
 
     # ------------------ feature after clean -----------------
@@ -195,13 +255,14 @@ class CleanAndFeature:
         else:
             return 2  # long text
 
-    def _feature_text_length(self, text):
+    def feature_text_length(self, text):
         """
         the length of tweets,
         :return:
         """
         # text = self.clean()  # return iterable
-        return np.asarray([self._length_num2cat(len(self._tokenizer(ts))) for ts in text])
+        result = np.asarray([self._length_num2cat(len(self._tokenizer(ts))) for ts in text])
+        return result.reshape((result.shape[0], 1))  # result.shape[0] -> how many rows
         # for ts in text:
         #     token_list = self._tokenizer(ts)
         #     yield len(token_list)  # length of single text
@@ -216,28 +277,24 @@ class CleanAndFeature:
         for ts in text:
             token_list = self._tokenizer(ts)
             yield nltk.pos_tag(token_list)  # return list of tuple [(token, tag), (), ...]
-            # todo: count N V A
 
-    def _feature_pos_count(self, text):
+    def feature_pos_count(self, text):
         """
         count number of:
         nouns: pos tag [NN*]
         verbs: pos tag [VB*]
         adj / adv: pos tag [JJ*|RB*]
-
-
         :return:
         """
         pos_count = []
         for pos_tagged in self._pos_tag(text):
             NN = sum([1 for _, tag in pos_tagged if tag.startswith('NN')])
             VB = sum([1 for _, tag in pos_tagged if tag.startswith('VB')])
-            AA = sum([1 for _, tag in pos_tagged if tag.startswith(('VB','RB'))])
+            AA = sum([1 for _, tag in pos_tagged if tag.startswith(('VB', 'RB'))])
             pos_count.append([NN, VB, AA])
         return np.asarray(pos_count)
 
-
-    def _feature_pos_ngram(self, text, vb=None, anly='word', mindf=0.05, maxdf=0.99, ngram=(3,3)): # todo parameters tuning
+    def feature_pos_ngram(self, text, vb=None, anly='word', mindf=0.05, maxdf=0.99, ngram=(3,3)): # todo parameters tuning
         """
 
         :param text:
@@ -251,26 +308,18 @@ class CleanAndFeature:
         def _pos_string(text):
             for ts in self._pos_tag(text):
                 yield " ".join(["_".join((token, tag)) for token, tag in ts])
-        return self._feature_word_ngram(_pos_string(text), vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
+        return self.feature_word_ngram(_pos_string(text), vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
 
-
-
-    # pos: number of each pos class (nva), pos_keyword
-
-    # topic related-score of each token
-    # negation
-
-
-    def _feature_char_ngram(self, text, vb=None, anly='char_wb', mindf=1, maxdf=1.0, ngram=(3,5)):
+    def feature_char_ngram(self, text, vb=None, anly='char_wb', mindf=1, maxdf=1.0, ngram=(3,5)):
         """
         character n-gram [3-5]
         :param anly: Option ‘char_wb’ creates character n-grams only from text inside word boundaries.
         :return:
         """
-        return self._feature_word_ngram(text, vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
+        return self.feature_word_ngram(text, vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
 
     #@load_or_make todo
-    def _feature_word_ngram(self, text, vb=None, anly='word', mindf=1, maxdf=1.0, ngram=(1,4)):
+    def feature_word_ngram(self, text, vb=None, anly='word', mindf=1, maxdf=1.0, ngram=(1,4)):
         """
         word n-gram [1-4], won't include punctuations
         :param vb: vocabulary for CountVectorizer()
@@ -285,26 +334,72 @@ class CleanAndFeature:
         data = count_vec.fit_transform(text).toarray()
         return data, count_vec.vocabulary_
 
-    def feature_string_based(self):  # todo
+
+    # ------------- clustering LDA score -------------
+    # todo: topic related-score of each token
+
+
+    # ---------------- make and combine features --------------
+    feature_funs = (feature_token_based, feature_text_length,
+                    feature_pos_count, feature_pos_ngram,
+                    feature_char_ngram, feature_word_ngram)
+
+    # todo: way to tuning feature parameters
+    # todo: make feature @load and make  (training or not )
+    def make_feature(self, path_feature, remake=False):
         """
 
         :return:
         """
-        # todo: clean only once
-        text = self.clean()  # return iterable
-        self._feature_word_ngram(text)
-        self._feature_char_ngram(text)
-        self._feature_text_length(text)
-        return np.concatenate(())
-    # make feature @load and make
-    # load feature and combine features  -> choose feature types
+        for f in self.feature_funs:
+
+            feature_name = f.__name__
+            feature_path = join_file_path(path_feature, feature_name)
+
+            if remake: file_remove(feature_path)
+            if not check_file_exist(feature_path):
+                print("dumping feature: {}....".format(feature_name))
+                # text: before clean or after clean
+                self.text, text = tee(self.text)
+                text = text if feature_name == 'feature_token_based' else self.clean()  # generators
+                # make feature
+                feature = f(self, text)
+                dump_pickle(feature_path, feature)
+
+    def combine_feature(self, path_feature, feature_type='ALL'):
+        """
+        load feature and combine features  -> choose feature types
+        :param path_feature:
+        :param feature_type: 'ALL': all feature type; []: list of string
+        :return:
+        """
+        assert (feature_type == 'ALL') or (isinstance(feature_type, list) and len(feature_type)>0)
+        self.make_feature(path_feature)  # make sure there are features can be loaded later
+
+        result = None
+        feature_list = [f.__name__ for f in self.feature_funs]
+
+        # filter features based on feature type
+        if feature_type is not 'ALL':
+            feature_list = set(sum([[fea for fea in feature_list if type in fea] for type in feature_type], []))
+        print("will return the concatenate features: {} ".format("\n".join(feature_list)))
+        # create feature path
+        for feature_name in feature_list:
+            print("loading feature: {}".format(feature_name))
+            feature_path = join_file_path(path_feature, feature_name)
+            # load feature
+            # 'ngram' feature return feature and vocabulary todo: if not training, use vocabulary
+            if 'ngram' in feature_name:
+                feature, _ = load_pickle(feature_path)
+            else:
+                feature = load_pickle(feature_path)
+            print("{} shape: {}".format(feature_name, feature.shape))
+            # combine feature
+            if result is None:
+                result = feature
+            else:  # concatenate features
+                result = np.concatenate((result, feature), axis=1)  # column wise
+        return result
 
 
-
-
-    # ------------- clustering LDA score -------------
-
-
-    # ---------------- combine features --------------
-    # numpy.concatenate((a1, a2, ...), axis=0)
 
