@@ -4,14 +4,13 @@ from itertools import tee
 from sklearn.feature_extraction.text import CountVectorizer
 from utils import join_file_path, file_remove, check_file_exist, dump_pickle, load_pickle, nested_fun
 
-punctuation = string.punctuation
-negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
-
 
 class CleanAndFeature:
     """
 
     """
+    punctuation = string.punctuation
+    negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
     tknz = nltk.tokenize.TweetTokenizer()
     lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
 
@@ -94,26 +93,26 @@ class CleanAndFeature:
         :return:
         """
         text_string += '.'  # need an end sign for a str
-        return re.sub(negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), text_string,
+        return re.sub(self.negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), text_string,
                       flags=re.IGNORECASE)
+
 
     # todo remove all non-ascii; remove all non-utf8 ?  may not
     def clean(self):
         """
-
-        :return:
+        clean text use token_funs and string_funs
+        :return: generator
         """
+        token_funs = (self._convert_user_name, self._convert_url, self._convert_number,
+                      self._convert_duplicate_characters, self._convert_lemmatization)
+        string_funs = (self._convert_lower_case, self._convert_negation)
         # text = self.text
         self.text, text = tee(self.text)  # keep generator
-        token_based_funs = (self._convert_user_name, self._convert_url,
-                            self._convert_number, self._convert_duplicate_characters,
-                            self._convert_lemmatization)
-        string_based_funs = (self._convert_lower_case, self._convert_negation)
         for ts in text:  # ts = text_string
             token_list = self._tokenizer(ts)  # return list
-            token_list = [nested_fun(token_based_funs, tk) for tk in token_list]
+            token_list = [nested_fun(token_funs, tk) for tk in token_list]
             text_string = ' '.join(token_list)  # return string
-            yield nested_fun(string_based_funs, text_string)
+            yield nested_fun(string_funs, text_string)
 
     # ------------------ feature before clean -----------------
     def _retweet(self, token):
@@ -146,7 +145,7 @@ class CleanAndFeature:
         :param token
         :return:
         """
-        return sum([1 for tk in token if tk in punctuation])
+        return sum([1 for tk in token if tk in self.punctuation])
 
     def _elongated(self, token):
         """
@@ -162,9 +161,9 @@ class CleanAndFeature:
         token based features: check tokens one by one
         :return:
         """
-        funs = (self._retweet, self._hashtag, self._upper, self._punctuation, self._elongated)
+        feature_token_funs = (self._retweet, self._hashtag, self._upper, self._punctuation, self._elongated)
         # ts = text_string; tk = token
-        return np.asarray([[sum([f(tk) for tk in self._tokenizer(ts)]) for f in funs] for ts in text])
+        return np.asarray([[sum([f(tk) for tk in self._tokenizer(ts)]) for f in feature_token_funs] for ts in text])
         # for ts in text:
             # token_list = self._tokenizer(ts)
             # results = []
@@ -341,7 +340,7 @@ class CleanAndFeature:
             else:  # concatenate features
                 result = np.concatenate((result, feature), axis=1)  # column wise
         return result
-        # todo: normalize feature matrix to [0,1]
+
 
 
 
