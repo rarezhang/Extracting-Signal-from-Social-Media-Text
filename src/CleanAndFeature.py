@@ -1,74 +1,12 @@
 import nltk, re, string
 import numpy as np
 from itertools import tee
-from functools import reduce
 from sklearn.feature_extraction.text import CountVectorizer
+from utils import join_file_path, file_remove, check_file_exist, dump_pickle, load_pickle, nested_fun
 
 punctuation = string.punctuation
 negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
 
-# ------------------- utils --------------------------
-import os, errno, pickle
-def join_file_path(dir_path, file_name):
-    """
-    Join path components
-    :return:
-    """
-    assert os.path.isdir(dir_path), 'first argument should be a dir path'
-    return os.path.join(dir_path, file_name)
-
-
-def nested_fun(funs, value):
-    """
-
-    :param funs: list of functions (iterable)
-    :param value:
-    :return: f1(f2(value))
-    """
-    return reduce(lambda res, f: f(res), funs, value)
-
-def file_remove(path):
-    """
-
-    :param path:
-    :return:
-    """
-    try:
-        os.remove(path)
-    except OSError as e:  # this would be "except OSError, e:" before Python 2.6
-        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
-            raise  # re-raise exception if a different error occurred
-
-
-def check_file_exist(path):
-    """
-    check if ``file`` exists
-    :param path:
-    :return: T/F
-    """
-    return os.path.isfile(path)
-
-
-def dump_pickle(path, data):
-    """
-    save data as binary file
-    :param path:
-    :param data:
-    :return:
-    """
-    with open(path, 'wb') as f:
-        pickle.dump(data, f, protocol=3)  # protocol 3 is compatible with protocol 2, pickle_load can load protocol 2
-
-def load_pickle(path):
-    """
-    :param path:
-    :return:
-    """
-    with open(path, 'rb') as f:
-        data = pickle.load(f)
-    return data
-
-# -------------------------------------------------
 
 class CleanAndFeature:
     """
