@@ -286,7 +286,6 @@ class CleanAndFeature:
         :return:
         """
         for f in self.feature_funs:
-
             feature_name = f.__name__
             feature_path = join_file_path(path_feature, feature_name)
 
