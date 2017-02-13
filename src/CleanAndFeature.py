@@ -230,13 +230,14 @@ class CleanAndFeature:
             pos_count.append([NN, VB, AA])
         return np.asarray(pos_count)
 
-    def feature_pos_ngram(self, text, vb=None, anly='word', mindf=0.05, maxdf=0.99, ngram=(3,3)): # todo parameters tuning
+    # todo parameters tuning: mindf and maxdf
+    def feature_pos_ngram(self, text, vb=None, anly='word', mindf=0.01, maxdf=0.99, ngram=(3,3)):
         """
 
         :param text:
         :param vb:
         :param anly:
-        :param mindf: 5%
+        :param mindf: 1%
         :param maxdf: 99%
         :param ngram:
         :return:
@@ -246,7 +247,8 @@ class CleanAndFeature:
                 yield " ".join(["_".join((token, tag)) for token, tag in ts])
         return self.feature_word_ngram(_pos_string(text), vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
 
-    def feature_char_ngram(self, text, vb=None, anly='char_wb', mindf=1, maxdf=1.0, ngram=(3,5)):
+    # todo: test 'char_wb' or 'char'
+    def feature_char_ngram(self, text, vb=None, anly='char', mindf=0.05, maxdf=0.95, ngram=(3,5)):
         """
         character n-gram [3-5]
         :param anly: Option ‘char_wb’ creates character n-grams only from text inside word boundaries.
@@ -254,13 +256,18 @@ class CleanAndFeature:
         """
         return self.feature_word_ngram(text, vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
 
-    def feature_word_ngram(self, text, vb=None, anly='word', mindf=1, maxdf=1.0, ngram=(1,4)):
+    def feature_word_ngram(self, text, vb=None, anly='word', mindf=2, maxdf=0.95, ngram=(1,4)):
         """
-        word n-gram [1-4], won't include punctuations
+        - document frequency threshold for CountVectorizer() -> word n-gram [1-4], won't include punctuations
+        - mindf and maxdf:
+            + If float: proportion of documents, integer: absolute counts.
+            + max_df can be set to a value in the range [0.7, 1.0) to automatically detect and
+              filter stop words based on intra corpus document frequency of terms.
+
         :param vb: vocabulary for CountVectorizer()
         :param anly: analyzer {‘word’, ‘char’, ‘char_wb’}, Option ‘char_wb’ creates character n-grams only from text inside word boundaries.
-        :param mindf: document frequency threshold for CountVectorizer() ->
-        :param maxdf: If float: proportion of documents, integer: absolute counts.
+        :param mindf: float in range [0.0, 1.0] or int, default=1
+        :param maxdf: float in range [0.0, 1.0] or int default=1.0
         :param: ngram: ngram range for CountVectorizer() -> (1,n), min_n <= n <= max_n will be used
         :return: return term-document matrix and learn the vocabulary dictionary
         """
@@ -339,7 +346,3 @@ class CleanAndFeature:
             else:  # concatenate features
                 result = np.concatenate((result, feature), axis=1)  # column wise
         return result
-
-
-
-
