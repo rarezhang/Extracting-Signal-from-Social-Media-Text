@@ -36,14 +36,14 @@ class Classification:
         if normalize:
             X = self._normalize_matrix(X)
         assert isinstance(X, np.ndarray), 'check the data type of the feature matrix, should be numpy array'
-        number_records = len(Y)
-        assert number_records == X.shape[0], 'check the number of records in label data Y and feature matrix X'
         try:
+            number_records = len(Y)
             Y = np.asarray(Y)
         except:
             raise TypeError('label data. in any form that can be converted to an array. '
                             'This includes lists, lists of tuples, tuples, tuples of tuples, '
                             'tuples of lists and ndarrays')
+        assert number_records == X.shape[0], 'check the number of records in label data Y and feature matrix X'
         self.output_directory = output_directory
         self.normalize = normalize
         self.X = X
