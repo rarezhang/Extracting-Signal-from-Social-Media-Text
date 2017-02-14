@@ -98,7 +98,7 @@ def join_file_path(dir_path, file_name):
     return os.path.join(dir_path, file_name)
 
 
-def concatenate_files(input_directory, output_file):
+def concatenate_directory_files(input_directory, output_file):
     """
     :param input_directory:
     :param output_file:
@@ -120,6 +120,19 @@ def concatenate_files(input_directory, output_file):
             in_file.close()
 
 
+def concatenate_files(*args, path_out):
+    """
+
+    :param args:
+    :return:
+    """
+    if not check_file_exist(path_out):
+        with open(path_out, 'w', encoding='utf-8', errors='ignore') as outfile:
+            for fname in args:
+                assert os.path.isfile(fname)
+                with open(fname, 'r', encoding='utf-8', errors='ignore') as infile:
+                    for line in infile:
+                        outfile.write(line)
 ######################################################
 # string
 ######################################################
