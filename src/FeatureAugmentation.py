@@ -51,7 +51,7 @@ class FeatureAugmentation:
                 dic_a[key_b] = position
         return dic_a
 
-    def _text_generator(self, path_text, sep='||', col=1):
+    def _text_generator(self, path_text, sep='||', col=1):  # todo need code refactoring, do not need create all the feature
         """
 
         :param path_text: path to text file
@@ -59,6 +59,7 @@ class FeatureAugmentation:
         """
         return CleanAndFeature(ReadTextFile(path_text, sep=sep).read_column(col))  # generator
 
+    # todo: consider dump X directly
     def _make_feature_vocabulary(self, text, path_feature_domain, default_vocabulary=True):
         """
 
@@ -74,7 +75,7 @@ class FeatureAugmentation:
         else:
             return X
 
-    def augment_feature(self, path_feature):
+    def augment_feature(self, path_feature):  # todo need code refactoring
         """
 
         :return: augmented feature matrix
@@ -95,7 +96,7 @@ class FeatureAugmentation:
             dump_pickle(vocabulary_path_general, vocabulary_general)
         else:
             vocabulary_general = load_pickle(vocabulary_path_general)
-
+        # todo: need code refactoring
         copy2(vocabulary_path_general, join_file_path(path_feature_general, 'source'))
         copy2(vocabulary_path_general, join_file_path(path_feature_general, 'target'))
 
