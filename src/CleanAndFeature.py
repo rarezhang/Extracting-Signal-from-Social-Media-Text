@@ -287,7 +287,7 @@ class CleanAndFeature:
                     feature_char_ngram, feature_word_ngram)
 
     # todo: way to tuning feature parameters
-    def make_feature(self, path_feature, remake=False, training_set=True):
+    def make_feature(self, path_feature, remake=False, default_vocabulary=True):
         """
 
         :return:
@@ -306,7 +306,7 @@ class CleanAndFeature:
                 if 'ngram' in feature_name:
                     vocabulary_name = ''.join((feature_name, '_vocabulary'))
                     vocabulary_path = join_file_path(path_feature, vocabulary_name)
-                    if training_set:  # dump vocabulary
+                    if default_vocabulary:  # dump vocabulary
                         feature, vocabulary = f(self, text)
                         dump_pickle(vocabulary_path, vocabulary)
                     else:
@@ -316,7 +316,7 @@ class CleanAndFeature:
                     feature = f(self, text)
                 dump_pickle(feature_path, feature)
 
-    def combine_feature(self, path_feature, feature_type='ALL'):
+    def combine_feature(self, path_feature, feature_type='ALL', default_vocabulary=True):
         """
         load feature and combine features  -> choose feature types
         :param path_feature:
@@ -324,7 +324,7 @@ class CleanAndFeature:
         :return:
         """
         assert (feature_type == 'ALL') or (isinstance(feature_type, list) and len(feature_type)>0)
-        self.make_feature(path_feature)  # make sure there are features can be loaded later
+        self.make_feature(path_feature, default_vocabulary=default_vocabulary)  # make sure there are features can be loaded later
 
         result = None
         feature_list = [f.__name__ for f in self.feature_funs]
