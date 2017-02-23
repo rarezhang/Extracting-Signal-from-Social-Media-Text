@@ -1,32 +1,33 @@
 import nltk, re, string
 from utils import nested_fun
+from _TextPrepro import _TextPrepro
 
 
-class Clean:
+class Clean(_TextPrepro):
     """
 
     """
     punctuation = string.punctuation
     negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
-    tknz = nltk.tokenize.TweetTokenizer()
+    # tknz = nltk.tokenize.TweetTokenizer()
     lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
 
-    def __init__(self, text):
-        """
-
-        :param text: text generator
-        """
-        self.text = text
+    # def __init__(self, text):
+    #     """
+    #
+    #     :param text: text generator
+    #     """
+    #     self.text = text
 
     # ----------------- helper methods ------------------------------------
-    @staticmethod
-    def _tokenizer(text_string):
-        """
-        tokenize each single tweet
-        :param text_string:
-        :return: list of token
-        """
-        return Clean.tknz.tokenize(text_string)
+    # @staticmethod
+    # def _tokenizer(text_string):  # todo put this into parent class
+    #     """
+    #     tokenize each single tweet
+    #     :param text_string:
+    #     :return: list of token
+    #     """
+    #     return Clean.tknz.tokenize(text_string)
 
     # ------------------- support methods for clean() -------------------
     @staticmethod
@@ -108,9 +109,10 @@ class Clean:
         clean text use token_funs and string_funs
         :return: generator
         """
-        token_funs = (Clean._convert_user_name, Clean._convert_url, Clean._convert_number,
-                      Clean._convert_duplicate_characters, Clean._convert_lemmatization)
-        string_funs = (Clean._convert_lower_case, Clean._convert_negation)
+        # self.function_name and cls.function_name both work
+        token_funs = (self._convert_user_name, self._convert_url, self._convert_number,
+                      self._convert_duplicate_characters, self._convert_lemmatization)
+        string_funs = (self._convert_lower_case, self._convert_negation)
         # text = self.text
         # self.text, text = tee(self.text)  # keep generator
         for ts in self.text:  # ts = text_string

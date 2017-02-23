@@ -3,119 +3,123 @@ import numpy as np
 from itertools import tee
 from sklearn.feature_extraction.text import CountVectorizer
 from utils import join_file_path, file_remove, check_file_exist, dump_pickle, load_pickle, nested_fun
+# from _TextPrepro import _TextPrepro
+from Clean import Clean
 
 
-class CleanAndFeature:
+class FeatureEng(Clean):
     """
 
     """
     punctuation = string.punctuation
-    negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
-    tknz = nltk.tokenize.TweetTokenizer()
+    # negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
+    # tknz = nltk.tokenize.TweetTokenizer()
     lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
 
-    def __init__(self, text):
-        """
-
-        :param text: text generator
-        """
-        self.text = text
+    # def __init__(self, text):
+    #     """
+    #
+    #     :param text: text generator
+    #     """
+    #     self.text = text
 
     # ----------------- helper methods ------------------------------------
-    def _tokenizer(self, text_string):
-        """
-        tokenize each single tweet
-        :param text_string:
-        :return: list of token
-        """
-        return self.tknz.tokenize(text_string)
+    # @staticmethod
+    # def _tokenizer(text_string):
+    #     """
+    #     tokenize each single tweet
+    #     :param text_string:
+    #     :return: list of token
+    #     """
+    #     return FeatureEng.tknz.tokenize(text_string)
 
-    # ------------------- support methods for clean() -------------------
-    def _convert_user_name(self, token):
-        """
-        convert @username to single token  _at_user_
-        :param token:
-        :return:
-        """
-        return re.sub('@[^\s]+', '_at_user_', token)
-
-    def _convert_url(self, token):
-        """
-        convert www.* or https?://* to single token _url_
-        :param token:
-        :return:
-        """
-        return re.sub('((www\.[^\s]+)|(http?://[^\s]+)|(https?://[^\s]+))', '_url_', token)
-
-    def _convert_number(self, token):
-        """
-        convert all numbers to a single token '_number_'
-        :param token:
-        :return:
-        """
-        return re.sub('[^\s]*[\d]+[^\s]*', '_number_', token)
-
-    def _convert_duplicate_characters(self, token):
-        """
-         remove duplicate characters. e.g., sooo gooooood -> soo good
-        :param token:
-        :return:
-        """
-        # return re.search('([a-zA-Z])\\1{2,}', token)
-        return re.sub('([a-zA-Z])\\1{2,}', '\\1\\1', token)
-
-    def _convert_lemmatization(self, token):
-        """
-        stem and lemmatizate a token, nltk can only process 'ascii' codec
-        :param token:
-        :return:
-        """
-        try:
-            return self.lmtzr.stem(token)
-        except:
-            return token
-
-    def _convert_lower_case(self, text_string):
-        """
-        convert all characters to lower case
-        :param token:
-        :return:
-        """
-        return text_string.lower()
-
-    def _convert_negation(self, text_string):
-        """
-        defined a negated context as a segment of a text that
-        starts with a negation word (e.g., no, shouldn't)
-        and ends with one of the punctuation marks: .,:;!?
-        add `_not_` prefix to each word following the negation word
-        :param str: string
-        :return:
-        """
-        text_string += '.'  # need an end sign for a str
-        return re.sub(self.negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), text_string,
-                      flags=re.IGNORECASE)
-
-
-    # todo remove all non-ascii; remove all non-utf8 ?  may not
-    def clean(self):
-        """
-        clean text use token_funs and string_funs
-        :return: generator
-        """
-        token_funs = (self._convert_user_name, self._convert_url, self._convert_number,
-                      self._convert_duplicate_characters, self._convert_lemmatization)
-        string_funs = (self._convert_lower_case, self._convert_negation)
-        # text = self.text
-        self.text, text = tee(self.text)  # keep generator
-        for ts in text:  # ts = text_string
-            token_list = self._tokenizer(ts)  # return list
-            token_list = [nested_fun(token_funs, tk) for tk in token_list]
-            text_string = ' '.join(token_list)  # return string
-            yield nested_fun(string_funs, text_string)
+    # # ------------------- support methods for clean() -------------------
+    # def _convert_user_name(self, token):
+    #     """
+    #     convert @username to single token  _at_user_
+    #     :param token:
+    #     :return:
+    #     """
+    #     return re.sub('@[^\s]+', '_at_user_', token)
+    #
+    # def _convert_url(self, token):
+    #     """
+    #     convert www.* or https?://* to single token _url_
+    #     :param token:
+    #     :return:
+    #     """
+    #     return re.sub('((www\.[^\s]+)|(http?://[^\s]+)|(https?://[^\s]+))', '_url_', token)
+    #
+    # def _convert_number(self, token):
+    #     """
+    #     convert all numbers to a single token '_number_'
+    #     :param token:
+    #     :return:
+    #     """
+    #     return re.sub('[^\s]*[\d]+[^\s]*', '_number_', token)
+    #
+    # def _convert_duplicate_characters(self, token):
+    #     """
+    #      remove duplicate characters. e.g., sooo gooooood -> soo good
+    #     :param token:
+    #     :return:
+    #     """
+    #     # return re.search('([a-zA-Z])\\1{2,}', token)
+    #     return re.sub('([a-zA-Z])\\1{2,}', '\\1\\1', token)
+    #
+    # def _convert_lemmatization(self, token):
+    #     """
+    #     stem and lemmatizate a token, nltk can only process 'ascii' codec
+    #     :param token:
+    #     :return:
+    #     """
+    #     try:
+    #         return self.lmtzr.stem(token)
+    #     except:
+    #         return token
+    #
+    # def _convert_lower_case(self, text_string):
+    #     """
+    #     convert all characters to lower case
+    #     :param token:
+    #     :return:
+    #     """
+    #     return text_string.lower()
+    #
+    # def _convert_negation(self, text_string):
+    #     """
+    #     defined a negated context as a segment of a text that
+    #     starts with a negation word (e.g., no, shouldn't)
+    #     and ends with one of the punctuation marks: .,:;!?
+    #     add `_not_` prefix to each word following the negation word
+    #     :param str: string
+    #     :return:
+    #     """
+    #     text_string += '.'  # need an end sign for a str
+    #     return re.sub(self.negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), text_string,
+    #                   flags=re.IGNORECASE)
+    #
+    #
+    # # todo remove all non-ascii; remove all non-utf8 ?  may not
+    # def clean(self):
+    #     """
+    #     clean text use token_funs and string_funs
+    #     :return: generator
+    #     """
+    #     token_funs = (self._convert_user_name, self._convert_url, self._convert_number,
+    #                   self._convert_duplicate_characters, self._convert_lemmatization)
+    #     string_funs = (self._convert_lower_case, self._convert_negation)
+    #     # text = self.text
+    #     self.text, text = tee(self.text)  # keep generator
+    #     for ts in text:  # ts = text_string
+    #         token_list = self._tokenizer(ts)  # return list
+    #         token_list = [nested_fun(token_funs, tk) for tk in token_list]
+    #         text_string = ' '.join(token_list)  # return string
+    #         yield nested_fun(string_funs, text_string)
 
     # ------------------ feature before clean -----------------
-    def _retweet(self, token):
+    @staticmethod
+    def _retweet(token):
         """
         if the token is 'RT'
         :param token:
@@ -123,7 +127,8 @@ class CleanAndFeature:
         """
         return 1 if re.fullmatch('RT', token) else 0
 
-    def _hashtag(self, token):
+    @staticmethod
+    def _hashtag(token):
         """
         if the token is a hash-tagged word
         :param token:
@@ -131,7 +136,8 @@ class CleanAndFeature:
         """
         return 1 if re.fullmatch('(?:\#+[\w_]+[\w\'_\-]*[\w_]+)', token) else 0
 
-    def _upper(self, token):
+    @staticmethod
+    def _upper(token):
         """
         if all the character in the token is in uppercase
         :param token:
@@ -139,15 +145,17 @@ class CleanAndFeature:
         """
         return 1 if token.isupper() else 0
 
-    def _punctuation(self, token):
+    @staticmethod
+    def _punctuation(token):
         """
         number of punctuation in the token
         :param token
         :return:
         """
-        return sum([1 for tk in token if tk in self.punctuation])
+        return sum([1 for tk in token if tk in FeatureEng.punctuation])
 
-    def _elongated(self, token):
+    @staticmethod
+    def _elongated(token):
         """
         if the token is an elongated word
         similar to _convert_duplicate_characters
@@ -176,7 +184,8 @@ class CleanAndFeature:
 
 
     # ------------------ feature after clean -----------------
-    def _length_num2cat(self, length, short_threshold=10, long_threshold=25):
+    @staticmethod
+    def _length_num2cat(length, short_threshold=10, long_threshold=25):
         """
         convert length from numerical to categorical
         :param length: int, number of tokens
