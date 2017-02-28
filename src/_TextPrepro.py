@@ -1,4 +1,5 @@
-import nltk, re, string
+import nltk
+from itertools import tee
 
 
 
@@ -27,3 +28,12 @@ class _TextPrepro:
         :return: list of token
         """
         return _TextPrepro.tknz.tokenize(text_string)
+
+    def get_text(self):
+        """
+        get text file, keep self.text generator
+        :return:
+        """
+        self.text, text = tee(self.text)
+        return text
+
