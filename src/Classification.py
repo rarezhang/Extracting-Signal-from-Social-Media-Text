@@ -15,7 +15,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report, precision_recall_fscore_support, accuracy_score
-from utils import join_file_path, check_file_exist, dump_pickle, load_pickle
+from utils import join_file_path, check_file_exist, check_make_dir, dump_pickle, load_pickle
 
 
 
@@ -32,7 +32,8 @@ class Classification:
         """
         set output file directory path
         """
-        assert os.path.isdir(output_directory), 'output path should be a directory'
+        check_make_dir(output_directory)  # check and make output dir
+
         if normalize:
             X = self._normalize_matrix(X)
         assert isinstance(X, np.ndarray), 'check the data type of the feature matrix, should be numpy array'

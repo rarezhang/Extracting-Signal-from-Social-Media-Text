@@ -1,9 +1,7 @@
 import nltk, re, string
 import numpy as np
-from itertools import tee
 from sklearn.feature_extraction.text import CountVectorizer
-from utils import join_file_path, file_remove, check_file_exist, dump_pickle, load_pickle, nested_fun
-# from _TextPrepro import _TextPrepro
+from utils import join_file_path, file_remove, check_file_exist, check_make_dir, dump_pickle, load_pickle, nested_fun
 from Clean import Clean
 
 
@@ -16,106 +14,6 @@ class FeatureEng(Clean):
     # tknz = nltk.tokenize.TweetTokenizer()
     lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
 
-    # def __init__(self, text):
-    #     """
-    #
-    #     :param text: text generator
-    #     """
-    #     self.text = text
-
-    # ----------------- helper methods ------------------------------------
-    # @staticmethod
-    # def _tokenizer(text_string):
-    #     """
-    #     tokenize each single tweet
-    #     :param text_string:
-    #     :return: list of token
-    #     """
-    #     return FeatureEng.tknz.tokenize(text_string)
-
-    # # ------------------- support methods for clean() -------------------
-    # def _convert_user_name(self, token):
-    #     """
-    #     convert @username to single token  _at_user_
-    #     :param token:
-    #     :return:
-    #     """
-    #     return re.sub('@[^\s]+', '_at_user_', token)
-    #
-    # def _convert_url(self, token):
-    #     """
-    #     convert www.* or https?://* to single token _url_
-    #     :param token:
-    #     :return:
-    #     """
-    #     return re.sub('((www\.[^\s]+)|(http?://[^\s]+)|(https?://[^\s]+))', '_url_', token)
-    #
-    # def _convert_number(self, token):
-    #     """
-    #     convert all numbers to a single token '_number_'
-    #     :param token:
-    #     :return:
-    #     """
-    #     return re.sub('[^\s]*[\d]+[^\s]*', '_number_', token)
-    #
-    # def _convert_duplicate_characters(self, token):
-    #     """
-    #      remove duplicate characters. e.g., sooo gooooood -> soo good
-    #     :param token:
-    #     :return:
-    #     """
-    #     # return re.search('([a-zA-Z])\\1{2,}', token)
-    #     return re.sub('([a-zA-Z])\\1{2,}', '\\1\\1', token)
-    #
-    # def _convert_lemmatization(self, token):
-    #     """
-    #     stem and lemmatizate a token, nltk can only process 'ascii' codec
-    #     :param token:
-    #     :return:
-    #     """
-    #     try:
-    #         return self.lmtzr.stem(token)
-    #     except:
-    #         return token
-    #
-    # def _convert_lower_case(self, text_string):
-    #     """
-    #     convert all characters to lower case
-    #     :param token:
-    #     :return:
-    #     """
-    #     return text_string.lower()
-    #
-    # def _convert_negation(self, text_string):
-    #     """
-    #     defined a negated context as a segment of a text that
-    #     starts with a negation word (e.g., no, shouldn't)
-    #     and ends with one of the punctuation marks: .,:;!?
-    #     add `_not_` prefix to each word following the negation word
-    #     :param str: string
-    #     :return:
-    #     """
-    #     text_string += '.'  # need an end sign for a str
-    #     return re.sub(self.negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), text_string,
-    #                   flags=re.IGNORECASE)
-    #
-    #
-    # # todo remove all non-ascii; remove all non-utf8 ?  may not
-    # def clean(self):
-    #     """
-    #     clean text use token_funs and string_funs
-    #     :return: generator
-    #     """
-    #     token_funs = (self._convert_user_name, self._convert_url, self._convert_number,
-    #                   self._convert_duplicate_characters, self._convert_lemmatization)
-    #     string_funs = (self._convert_lower_case, self._convert_negation)
-    #     # text = self.text
-    #     self.text, text = tee(self.text)  # keep generator
-    #     for ts in text:  # ts = text_string
-    #         token_list = self._tokenizer(ts)  # return list
-    #         token_list = [nested_fun(token_funs, tk) for tk in token_list]
-    #         text_string = ' '.join(token_list)  # return string
-    #         yield nested_fun(string_funs, text_string)
 
     # ------------------ feature before clean -----------------
     @staticmethod
@@ -220,7 +118,7 @@ class FeatureEng(Clean):
         """
         # text = self.clean()
         for ts in text:
-            token_list = self._tokenizer(ts)
+            token_list = self._tokenizer(ts)  # inherited method from _TextPrepro Class
             yield nltk.pos_tag(token_list)  # return list of tuple [(token, tag), (), ...]
 
     def feature_pos_count(self, text):
@@ -240,32 +138,32 @@ class FeatureEng(Clean):
         return np.asarray(pos_count)
 
     # todo parameters tuning: mindf and maxdf
-    def feature_pos_ngram(self, text, vb=None, anly='word', mindf=0.01, maxdf=0.99, ngram=(3,3)):
+    def feature_pos_ngram(self, text, vb=None, anly='word', mindf=2, maxdf=1.0, ngram=(3,3), stp_w=None):
         """
 
         :param text:
         :param vb:
         :param anly:
-        :param mindf: 1%
-        :param maxdf: 99%
+        :param mindf: 0.0 -> 0%, 0.01 -> 1%
+        :param maxdf: 0.99 -> 99%, 1.0 -> 100%
         :param ngram:
         :return:
         """
         def _pos_string(text):
             for ts in self._pos_tag(text):
                 yield " ".join(["_".join((token, tag)) for token, tag in ts])
-        return self.feature_word_ngram(_pos_string(text), vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
+        return self.feature_word_ngram(_pos_string(text), vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram, stp_w=stp_w)
 
     # todo: test 'char_wb' or 'char'
-    def feature_char_ngram(self, text, vb=None, anly='char', mindf=0.05, maxdf=0.95, ngram=(3,5)):
+    def feature_char_ngram(self, text, vb=None, anly='char', mindf=0.01, maxdf=0.99, ngram=(3,5), stp_w=None):
         """
         character n-gram [3-5]
         :param anly: Option ‘char_wb’ creates character n-grams only from text inside word boundaries.
         :return:
         """
-        return self.feature_word_ngram(text, vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram)
+        return self.feature_word_ngram(text, vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram, stp_w=stp_w)
 
-    def feature_word_ngram(self, text, vb=None, anly='word', mindf=2, maxdf=0.95, ngram=(1,4)):
+    def feature_word_ngram(self, text, vb=None, anly='word', mindf=1, maxdf=0.99, ngram=(1,4), stp_w='english'):
         """
         - document frequency threshold for CountVectorizer() -> word n-gram [1-4], won't include punctuations
         - mindf and maxdf:
@@ -281,7 +179,7 @@ class FeatureEng(Clean):
         :return: return term-document matrix and learn the vocabulary dictionary
         """
         # text = self.clean()  # return iterable
-        count_vec = CountVectorizer(vocabulary=vb, analyzer=anly, min_df=mindf, max_df=maxdf, ngram_range=ngram, decode_error='ignore', stop_words='english')
+        count_vec = CountVectorizer(vocabulary=vb, analyzer=anly, min_df=mindf, max_df=maxdf, ngram_range=ngram, decode_error='ignore', stop_words=stp_w) #stop_words='english'
         data = count_vec.fit_transform(text).toarray()
         return data, count_vec.vocabulary_
 
@@ -301,6 +199,8 @@ class FeatureEng(Clean):
 
         :return:
         """
+        check_make_dir(path_feature)  # check and make directory
+
         for f in self.feature_funs:
             feature_name = f.__name__
             feature_path = join_file_path(path_feature, feature_name)
@@ -309,7 +209,7 @@ class FeatureEng(Clean):
             if not check_file_exist(feature_path):
                 print("dumping feature: {}....".format(feature_name))
                 # text: before clean or after clean
-                self.text, text = tee(self.text)
+                text = self.get_text()  # inherit from _TextPrepro
                 text = text if feature_name == 'feature_token_based' else self.clean()  # generators
                 # make feature
                 if 'ngram' in feature_name:
@@ -354,4 +254,4 @@ class FeatureEng(Clean):
                 result = feature
             else:  # concatenate features
                 result = np.concatenate((result, feature), axis=1)  # column wise
-        return result
+        return result  # todo dump feature with proper name
