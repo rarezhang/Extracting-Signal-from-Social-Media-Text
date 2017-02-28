@@ -76,6 +76,17 @@ def check_file_exist(path):
     return os.path.isfile(path)
 
 
+def check_make_dir(path):
+    """
+    python 3.2+
+    try to make a directory if the directory not exist
+    :param path:
+    :return:
+    """
+    # exist_ok=True, avoid raising an exception if the directory already exists
+    os.makedirs(path, exist_ok=True)
+
+
 def file_remove(path):
     """
     remove file if file exists, return error except no such file
@@ -106,7 +117,7 @@ def concatenate_directory_files(input_directory, output_file):
     """
     assert os.path.isdir(input_directory), 'input path should be a directory'
 
-    if not input_directory.endswith('/'):
+    if not input_directory.endswith('/'):  # todo: os join path
         input_directory = ''.join((input_directory, '/'))
 
     if not check_file_exist(output_file):
