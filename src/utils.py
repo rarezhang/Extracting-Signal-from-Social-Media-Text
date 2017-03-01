@@ -84,6 +84,8 @@ def check_make_dir(path):
     :return:
     """
     # exist_ok=True, avoid raising an exception if the directory already exists
+    if not os.path.isdir(path):
+        print('dir_path is not valid, creating a new dir now: {}'.format(path))
     os.makedirs(path, exist_ok=True)
 
 
@@ -105,7 +107,10 @@ def join_file_path(dir_path, file_name):
     Join path components
     :return:
     """
-    assert os.path.isdir(dir_path), 'first argument should be a dir path'
+    # assert os.path.isdir(dir_path), 'first argument should be a dir path'
+    if not os.path.isdir(dir_path):
+        print('dir_path is not valid, creating a new dir now: {}'.format(dir_path))
+        check_make_dir(dir_path)
     return os.path.join(dir_path, file_name)
 
 
