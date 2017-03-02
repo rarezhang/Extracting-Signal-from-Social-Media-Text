@@ -11,6 +11,7 @@ class Clean(_TextPrepro):
     negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
     # tknz = nltk.tokenize.TweetTokenizer()
     lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
+    translator = str.maketrans('', '', string.punctuation)
 
     # def __init__(self, text):
     #     """
@@ -102,6 +103,14 @@ class Clean(_TextPrepro):
         return re.sub(Clean.negation_pattern, lambda match: re.sub(r'(\s+)(\w+)', r'\1_not_\2', match.group(0)), text_string,
                       flags=re.IGNORECASE)
 
+    @staticmethod
+    def _convert_punctuation(text_string):
+        """
+        remove punctuation
+        :param text_string:
+        :return:
+        """
+        return text_string.translate(Clean.translator)
 
     # todo remove all non-ascii; remove all non-utf8 ?  may not
     def clean(self):
@@ -112,7 +121,8 @@ class Clean(_TextPrepro):
         # self.function_name and cls.function_name both work
         token_funs = (self._convert_user_name, self._convert_url, self._convert_number,
                       self._convert_duplicate_characters, self._convert_lemmatization)
-        string_funs = (self._convert_lower_case, self._convert_negation)
+        # _convert_punctuation must be after _convert_negation
+        string_funs = (self._convert_lower_case, self._convert_negation, self._convert_punctuation)
         # text = self.text
         # self.text, text = tee(self.text)  # keep generator
         for ts in self.text:  # ts = text_string
