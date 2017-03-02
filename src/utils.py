@@ -24,7 +24,7 @@ def time_it(f):
     return timed
 
 
-def load_or_make(f):
+def load_or_make(f):  # todo, add file path here
     """
     decorator function
     :param f:
@@ -40,7 +40,23 @@ def load_or_make(f):
         return data
     return wrap_fun
 
+def decor(path):
+    # assert path is None, 'set path'
 
+    def load_or_make2(f):  # todo, add file path here
+        """
+        decorator function
+        :param f:
+        :return:
+        """
+        def wrap_fun(*args, **kwargs):
+            if check_file_exist(path):
+                data = load_pickle(path)
+            else:
+                data = f(*args, **kwargs)
+                dump_pickle(path, data)
+            return wrap_fun
+        return load_or_make2
 ######################################################
 # files and paths
 ######################################################
