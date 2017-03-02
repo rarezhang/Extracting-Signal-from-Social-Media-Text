@@ -24,9 +24,10 @@ def time_it(f):
     return timed
 
 
-def load_or_make(f):  # todo, add file path here
+def load_or_make(f):
     """
     decorator function
+    set store path when declare the actual fun
     :param f:
     :return:
     """
@@ -40,10 +41,16 @@ def load_or_make(f):  # todo, add file path here
         return data
     return wrap_fun
 
-def decor(path):  # todo
+
+def load_or_make2(path):
+    """
+    set store path when declare the decorator fun
+    :param path:
+    :return:
+    """
     assert path is not None, 'set path'
 
-    def load_or_make2(f):  # todo, add file path here
+    def decorator_fun(f):  # todo, add file path here
         """
         decorator function
         :param f:
@@ -51,13 +58,15 @@ def decor(path):  # todo
         """
         def wrap_fun(*args, **kwargs):
             if check_file_exist(path):
+                print('loading fun:{} result from: {}'.format(f.__name__, path))
                 data = load_pickle(path)
             else:
+                print('fun:{} running... '.format(f.__name__))
                 data = f(*args, **kwargs)
                 dump_pickle(path, data)
             return data
         return wrap_fun
-    return load_or_make2
+    return decorator_fun
 ######################################################
 # files and paths
 ######################################################
