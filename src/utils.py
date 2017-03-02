@@ -88,6 +88,17 @@ def check_make_dir(path):
         print('dir_path is not valid, creating a new dir now: {}'.format(path))
     os.makedirs(path, exist_ok=True)
 
+def files_remove(path):
+    """
+
+    :param path:
+    :return:
+    """
+    assert os.path.isdir(path), 'remove all files in a directory'
+    files = [os.path.join(path, f) for f in os.listdir(path)]
+    for f in files: os.remove(f)
+
+
 
 def file_remove(path):
     """
@@ -108,9 +119,7 @@ def join_file_path(dir_path, file_name):
     :return:
     """
     # assert os.path.isdir(dir_path), 'first argument should be a dir path'
-    if not os.path.isdir(dir_path):
-        print('dir_path is not valid, creating a new dir now: {}'.format(dir_path))
-        check_make_dir(dir_path)
+    check_make_dir(dir_path)
     return os.path.join(dir_path, file_name)
 
 
