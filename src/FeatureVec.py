@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
 # local
 from Clean import Clean
-from utils import load_or_make2, check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
+from utils import load_or_make, check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
 
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -122,7 +122,7 @@ class FeatureVec(Clean):
         self.lr_model = LogisticRegression(fit_intercept=True, C=1.0, penalty='l2', tol=0.0001, multi_class='multinomial', solver='newton-cg')
         self.lr_model.fit(X, y)
 
-    @load_or_make2(path=join_file_path(general_path_feature, 'token_vector_label_pair'))
+    @load_or_make(path=join_file_path(general_path_feature, 'token_vector_label_pair'))
     def _token_vector_label_pair(self):
         """
 
@@ -138,7 +138,7 @@ class FeatureVec(Clean):
                 tvlp.append((tk, vector, y))
         return tvlp
 
-    @load_or_make2(path=join_file_path(general_path_feature, 'X_Y'))
+    @load_or_make(path=join_file_path(general_path_feature, 'X_Y'))
     def _make_word_vector(self):
         """
         for logistic regression
@@ -154,7 +154,7 @@ class FeatureVec(Clean):
             X = x if X is None else np.concatenate((X,x), axis=0)
         return X, Y
 
-    @load_or_make2(path=join_file_path(general_path_feature, 'X_adjust'))
+    @load_or_make(path=join_file_path(general_path_feature, 'X_adjust'))
     def _make_word_vector_adjust(self):
         """
 
@@ -166,7 +166,7 @@ class FeatureVec(Clean):
         X_adjust = np.dot(dist, X)
         return X_adjust
 
-    @load_or_make2(join_file_path(general_path_feature, 'vec.dic'))
+    @load_or_make(join_file_path(general_path_feature, 'vec.dic'))
     def _word_adjust_vector(self):
         """
 
@@ -184,7 +184,7 @@ class FeatureVec(Clean):
                     vec_dic[tk] = adj_vec
         return vec_dic
 
-    @load_or_make2(path=join_file_path(general_path_feature, 'idf.dic'))
+    @load_or_make(path=join_file_path(general_path_feature, 'idf.dic'))
     def _word_idf_score(self):
         """
 
@@ -196,7 +196,7 @@ class FeatureVec(Clean):
         return idf_dic
 
     # -------------------------------------------------------------
-    @load_or_make2(path=join_file_path(general_path_feature, 'doc.feature'))
+    @load_or_make(path=join_file_path(general_path_feature, 'doc.feature'))
     def feature_sentence_embedding(self, text):
         """
 

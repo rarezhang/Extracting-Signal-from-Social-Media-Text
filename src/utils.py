@@ -24,7 +24,7 @@ def time_it(f):
     return timed
 
 
-def load_or_make(f):
+def load_or_make2(f):
     """
     decorator function
     set store path when declare the actual fun
@@ -42,7 +42,7 @@ def load_or_make(f):
     return wrap_fun
 
 
-def load_or_make2(path):
+def load_or_make(path):
     """
     set store path when declare the decorator fun
     :param path:
