@@ -4,6 +4,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from utils import join_file_path, file_remove, check_file_exist, check_make_dir, dump_pickle, load_pickle, nested_fun
 from Clean import Clean
 
+# todo: decorator to save return  
 
 class FeatureEng(Clean):
     """
@@ -250,8 +251,9 @@ class FeatureEng(Clean):
             feature = load_pickle(feature_path)
             print("{} shape: {}".format(feature_name, feature.shape))
             # combine feature
-            if result is None:
-                result = feature
-            else:  # concatenate features
-                result = np.concatenate((result, feature), axis=1)  # column wise
+            result = feature if result is None else np.concatenate((result, feature), axis=1)
+            # if result is None:
+            #     result = feature
+            # else:  # concatenate features
+            #     result = np.concatenate((result, feature), axis=1)  # column wise
         return result  # todo dump feature with proper name

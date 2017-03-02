@@ -9,7 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from Clean import Clean
 from utils import check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
 
-# todo: decorator to dump return files 
+# todo: decorator to dump return files
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
