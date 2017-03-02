@@ -9,6 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from Clean import Clean
 from utils import check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
 
+# todo: decorator to dump return files 
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -32,13 +33,15 @@ class FeatureVec(Clean):
         self.path_model = path_model
         self.path_feature = path_feature
         if rebuild:
-            files_remove(self.path_feature)
-            files_remove(self.path_model)
-
-        # train word2vector model  todo rebuild clear all path_model path_feature
+            files_remove(self.path_feature); files_remove(self.path_model)
+        # train word2vector model
         self.word2vector_model()
 
     def sentences(self):
+        """
+        return input file for word2vector model
+        :return:
+        """
         text = self.get_text()
         # gensim wants to iterate over the data multiple times
         # so generator doesn't work
@@ -61,7 +64,7 @@ class FeatureVec(Clean):
             # size: size of the NN layers, degrees of freedom, default=100
             # workers: how many workers, need Cython, default=1
             # iter = number of iterations (epochs) over the corpus. Default is 5.
-
+            # todo: parameter tuning
             # Initialize the model from an iterable of sentences. Each sentence is a list of words
             # (unicode strings) that will be used for training.
             self.w2v_model = Word2Vec(self.sentences(), sg=1, min_count=1, window=5, size=self.vector_size, workers=4)
@@ -98,8 +101,6 @@ class FeatureVec(Clean):
         self.lr_model = LogisticRegression(fit_intercept=True, C=1.0, penalty='l2', tol=0.0001, multi_class='multinomial', solver='newton-cg')
         self.lr_model.fit(X, y)
 
-
-
     def _token_vector_label_pair(self):
         """
 
@@ -119,7 +120,6 @@ class FeatureVec(Clean):
             tvlp = load_pickle(path_tvlp)
         return tvlp
 
-
     def _make_word_vector(self):
         """
         for logistic regression
@@ -133,7 +133,7 @@ class FeatureVec(Clean):
             for _, x, y in tvlp:
                 Y.append(y)
                 X = x if X is None else np.concatenate((X,x), axis=0)
-                # if X is None:  # todo
+                # if X is None:
                 #     X = x
                 # else:
                 #     X = np.concatenate((X,x), axis=0) # row wise
@@ -156,8 +156,6 @@ class FeatureVec(Clean):
 
             X, Y = self._make_word_vector()
             self._logistic_regression(X, Y)
-            # W, b = self.lr_model.coef_, self.lr_model.intercept_
-            # c = self.lr_model.classes_  # todo: need this information
 
             # The confidence score for a sample is the signed distance of that sample to the hyperplane.
             dist = np.diag(self.lr_model.decision_function(X))
@@ -237,23 +235,6 @@ class FeatureVec(Clean):
             document_vec = load_pickle(path_doc_feature)
         return document_vec
 
-
-    def test(self):  # todo remove
-        # text = self.get_text()
-        # for t in text:
-        #     print(t)
-        # path_X = join_file_path(self.path_feature, 'X')
-        # X = load_pickle(path_X)
-        # print(X)
-        # print('+++++++++++++++++++++++++++++++++++++++++++++++++')
-        # # path_X_adjust = join_file_path(self.path_feature, 'X_adjust')
-        # # X_adjust = load_pickle(path_X_adjust)
-        # # print(X_adjust)
-        # print('+++++++++++++++++++++++++++++++++++++++++++++++++')
-        # path_vec_dic = join_file_path(self.path_feature, 'vec.dic')
-        # dic = load_pickle(path_vec_dic)
-        # print(dic)
-        pass
 
 
 
