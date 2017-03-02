@@ -40,8 +40,8 @@ def load_or_make(f):  # todo, add file path here
         return data
     return wrap_fun
 
-def decor(path):
-    # assert path is None, 'set path'
+def decor(path):  # todo
+    assert path is not None, 'set path'
 
     def load_or_make2(f):  # todo, add file path here
         """
@@ -55,8 +55,9 @@ def decor(path):
             else:
                 data = f(*args, **kwargs)
                 dump_pickle(path, data)
-            return wrap_fun
-        return load_or_make2
+            return data
+        return wrap_fun
+    return load_or_make2
 ######################################################
 # files and paths
 ######################################################
