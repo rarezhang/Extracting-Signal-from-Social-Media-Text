@@ -1,23 +1,30 @@
 """
 
 """
-import gensim, logging
+import logging
 import numpy as np
 from gensim.models.word2vec import Word2Vec
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
+# local
 from Clean import Clean
-from utils import check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
+from utils import load_or_make2, check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
 
-# todo: decorator to dump return files
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
+general_path_model = '../data/word_vector/model/'
+general_path_feature = '../data/word_vector/feature/'
+assert general_path_feature is not None and general_path_model is not None
+print(f'path to model: {general_path_model}')
+print(f'path to feature: {general_path_feature}')
+
 
 class FeatureVec(Clean):
     """
 
     """
-    def __init__(self, text, label, path_model, path_feature, rebuild=False):
+    def __init__(self, text, label, rebuild=False):
         """
 
         :param text: training data
@@ -29,15 +36,14 @@ class FeatureVec(Clean):
         self.label = label
         self.w2v_model = None
         self.lr_model = None
-        self.vector_size = 10
-        self.path_model = path_model
-        self.path_feature = path_feature
+        self.idf_model = None
+        self.vector_size = 10  # todo add to argument
         if rebuild:
-            files_remove(self.path_feature); files_remove(self.path_model)
-        # train word2vector model
-        self.word2vector_model()
+            files_remove(general_path_feature); files_remove(general_path_model)
+        self.train_word2vector_model()
+        self.train_idf_model()
 
-    def sentences(self):
+    def _sentences(self):
         """
         return input file for word2vector model
         :return:
@@ -47,13 +53,14 @@ class FeatureVec(Clean):
         # so generator doesn't work
         return [self._tokenizer(ts) for ts in text]
 
-    def word2vector_model(self):
+    def train_word2vector_model(self):  # todo: add parameters tuning
         """
 
         :param path_model: path to model
         :return:
         """
-        path_model = join_file_path(self.path_model, 'w2v.model')
+        # path_model = join_file_path(self.path_model, 'w2v.model')
+        path_model = join_file_path(general_path_model, 'w2v.model')
 
         if not check_file_exist(path_model):
             # sg: sg=0 --> CBOW; sg=1 --> skip-gram
@@ -67,20 +74,34 @@ class FeatureVec(Clean):
             # todo: parameter tuning
             # Initialize the model from an iterable of sentences. Each sentence is a list of words
             # (unicode strings) that will be used for training.
-            self.w2v_model = Word2Vec(self.sentences(), sg=1, min_count=1, window=5, size=self.vector_size, workers=4)
+            self.w2v_model = Word2Vec(self._sentences(), sg=1, min_count=1, window=5, size=self.vector_size, workers=4)
             # storing model
             self.w2v_model.save(path_model)
         else:
-            self.w2v_model = gensim.models.Word2Vec.load(path_model)
+            self.w2v_model = Word2Vec.load(path_model)
 
         # todo: another function
         # if resuming:  # load a model and continue training it with more sentences
         #     self.w2v_model.train(text)
         #     self.w2v_model.save(path_model)
 
+    def train_idf_model(self):
+        """
 
+        :return:
+        """
+        path_model = join_file_path(general_path_model, 'tfidf.model')
+        if not check_file_exist(path_model):
+            text = self.get_text()
+            self.idf_model = TfidfVectorizer(tokenizer=self._tokenizer)
+            # tfidf_vec = TfidfVectorizer(tokenizer=None)
+            self.idf_model.fit(text)
+            dump_pickle(path_model, self.idf_model)
+        else:
+            self.idf_model = load_pickle(path_model)
 
-    def _word_vector(self, word):  # may do not need this method
+    # -------------------------------------------------------------
+    def _word_vector(self, word):
         """
 
         :param model:
@@ -101,138 +122,100 @@ class FeatureVec(Clean):
         self.lr_model = LogisticRegression(fit_intercept=True, C=1.0, penalty='l2', tol=0.0001, multi_class='multinomial', solver='newton-cg')
         self.lr_model.fit(X, y)
 
+    @load_or_make2(path=join_file_path(general_path_feature, 'token_vector_label_pair'))
     def _token_vector_label_pair(self):
         """
 
         :return:
         """
-        path_tvlp = join_file_path(self.path_feature, 'token_vector_label_pair')
-        if not check_file_exist(path_tvlp):
-            text = self.get_text()  # inherited from _TextPrepro
-            tvlp = []
-            for y, ts in zip(self.label, text):
-                for tk in self._tokenizer(ts):
-                    # yield y, tk, self._word_vector(tk)
-                    vector = np.reshape(self._word_vector(tk), newshape=(1, self.vector_size))
-                    tvlp.append((tk, vector, y))
-            dump_pickle(path_tvlp, tvlp)
-        else:
-            tvlp = load_pickle(path_tvlp)
+        # path_tvlp = join_file_path(self.path_feature, 'token_vector_label_pair')
+        # if not check_file_exist(path_tvlp):
+        text = self.get_text()  # inherited from _TextPrepro
+        tvlp = []
+        for y, ts in zip(self.label, text):
+            for tk in self._tokenizer(ts):
+                vector = np.reshape(self._word_vector(tk), newshape=(1, self.vector_size))
+                tvlp.append((tk, vector, y))
         return tvlp
 
+    @load_or_make2(path=join_file_path(general_path_feature, 'X_Y'))
     def _make_word_vector(self):
         """
         for logistic regression
         :return:
         """
-        path_X = join_file_path(self.path_feature, 'X')
-        path_Y = join_file_path(self.path_feature, 'Y')
-        if not (check_file_exist(path_X) and check_file_exist(path_Y)):
-            X, Y = None, []
-            tvlp = self._token_vector_label_pair()  # ltp: generator
-            for _, x, y in tvlp:
-                Y.append(y)
-                X = x if X is None else np.concatenate((X,x), axis=0)
-                # if X is None:
-                #     X = x
-                # else:
-                #     X = np.concatenate((X,x), axis=0) # row wise
-            dump_pickle(path_X, X)
-            dump_pickle(path_Y, Y)
-        else:
-            X = load_pickle(path_X)
-            Y = load_pickle(path_Y)
+        # path_X = join_file_path(self.path_feature, 'X')
+        # path_Y = join_file_path(self.path_feature, 'Y')
+        # if not (check_file_exist(path_X) and check_file_exist(path_Y)):
+        X, Y = None, []
+        tvlp = self._token_vector_label_pair()
+        for _, x, y in tvlp:
+            Y.append(y)
+            X = x if X is None else np.concatenate((X,x), axis=0)
         return X, Y
 
+    @load_or_make2(path=join_file_path(general_path_feature, 'X_adjust'))
+    def _make_word_vector_adjust(self):
+        """
+
+        :return:
+        """
+        X, Y = self._make_word_vector()
+        self._logistic_regression(X, Y)
+        dist = np.diag(self.lr_model.decision_function(X))
+        X_adjust = np.dot(dist, X)
+        return X_adjust
+
+    @load_or_make2(join_file_path(general_path_feature, 'vec.dic'))
     def _word_adjust_vector(self):
         """
 
         :param path_vector_feature:
         :return:
         """
-        path_X_adjust = join_file_path(self.path_feature, 'X_adjust')
-        path_vec_dic = join_file_path(self.path_feature, 'vec.dic')
-        if not check_file_exist(path_X_adjust):
-
-            X, Y = self._make_word_vector()
-            self._logistic_regression(X, Y)
-
-            # The confidence score for a sample is the signed distance of that sample to the hyperplane.
-            dist = np.diag(self.lr_model.decision_function(X))
-            X_adjust = np.dot(dist, X)
-            dump_pickle(path_X_adjust, X_adjust)
-        else:
-            X_adjust = load_pickle(path_X_adjust)
-
-        if not check_file_exist(path_vec_dic):
-            tvlp = self._token_vector_label_pair()  # ltp: generator
-            # vec_dic = {tk: adj_vec for tk,_,_ in ltp for adj_vec in X_adjust}
-            vec_dic = {}
-            for tk, _, _ in tvlp:
-                for adj_vec in X_adjust:
-                    if tk in vec_dic:
-                        vec_dic[tk] = np.add(vec_dic[tk], adj_vec)/2
-                    else:
-                        vec_dic[tk] = adj_vec
-            dump_pickle(path_vec_dic, vec_dic)
-        else:
-            vec_dic = load_pickle(path_vec_dic)
+        X_adjust = self._make_word_vector_adjust()
+        tvlp = self._token_vector_label_pair()
+        vec_dic = {}
+        for tk, _, _ in tvlp:
+            for adj_vec in X_adjust:
+                if tk in vec_dic:
+                    vec_dic[tk] = np.add(vec_dic[tk], adj_vec)/2
+                else:
+                    vec_dic[tk] = adj_vec
         return vec_dic
 
+    @load_or_make2(path=join_file_path(general_path_feature, 'idf.dic'))
     def _word_idf_score(self):
         """
 
         :return:
         """
-        path_model = join_file_path(self.path_model, 'tfidf.model')
-        path_idf_dic = join_file_path(self.path_feature, 'idf.dic')
-        if not check_file_exist(path_model):
-            text = self.get_text()
-            tfidf_vec = TfidfVectorizer(tokenizer=self._tokenizer)
-            # tfidf_vec = TfidfVectorizer(tokenizer=None)
-            tfidf_vec.fit(text)
-            dump_pickle(path_model, tfidf_vec)
-        else:
-            tfidf_vec = load_pickle(path_model)
-
-        if not check_file_exist(path_idf_dic):
-            idf_score = np.log(tfidf_vec.idf_)
-            vb = tfidf_vec.vocabulary_
-            idf_dic = {tk: idf_score[vb[tk]] for tk in vb}
-            dump_pickle(path_idf_dic, idf_dic)
-        else:
-            idf_dic = load_pickle(path_idf_dic)
+        idf_score = np.log(self.idf_model.idf_)
+        vb = self.idf_model.vocabulary_
+        idf_dic = {tk: idf_score[vb[tk]] for tk in vb}
         return idf_dic
 
-
+    # -------------------------------------------------------------
+    @load_or_make2(path=join_file_path(general_path_feature, 'doc.feature'))
     def feature_sentence_embedding(self, text):
         """
 
         :param text: testing data
         :return:
         """
-        path_doc_feature = join_file_path(self.path_feature, 'doc.feature')
-        if not check_file_exist(path_doc_feature):
-            vec_dic = self._word_adjust_vector()
-            idf_dic = self._word_idf_score()
-            document_vec = None
-            for ts in text:
-                # sentence feature
-                sentence_vec = np.empty((1, self.vector_size))
-                for tk in self._tokenizer(ts):
-                    vec = vec_dic.get(tk, np.zeros((1, self.vector_size)))
-                    idf = idf_dic.get(tk, 0)
-                    vec = vec * idf
-                    sentence_vec += vec
-                # document feature
-                document_vec = sentence_vec if document_vec is None else np.concatenate((document_vec, sentence_vec), axis=0)
-                # if document_vec is None:
-                #     document_vec = sentence_vec
-                # else:
-                #     document_vec = np.concatenate((document_vec, sentence_vec), axis=0)
-            dump_pickle(path_doc_feature, document_vec)
-        else:
-            document_vec = load_pickle(path_doc_feature)
+        vec_dic = self._word_adjust_vector()
+        idf_dic = self._word_idf_score()
+        document_vec = None
+        for ts in text:
+            # sentence feature
+            sentence_vec = np.empty((1, self.vector_size))
+            for tk in self._tokenizer(ts):
+                vec = vec_dic.get(tk, np.zeros((1, self.vector_size)))
+                idf = idf_dic.get(tk, 0)
+                vec = vec * idf
+                sentence_vec += vec
+            # document feature
+            document_vec = sentence_vec if document_vec is None else np.concatenate((document_vec, sentence_vec), axis=0)
         return document_vec
 
 
