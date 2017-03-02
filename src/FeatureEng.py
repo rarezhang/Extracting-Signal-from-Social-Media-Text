@@ -4,7 +4,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from utils import join_file_path, file_remove, check_file_exist, check_make_dir, dump_pickle, load_pickle, nested_fun
 from Clean import Clean
 
-# todo: decorator to save return  
+# todo: decorator to save return
 
 class FeatureEng(Clean):
     """
@@ -179,8 +179,9 @@ class FeatureEng(Clean):
         :param: ngram: ngram range for CountVectorizer() -> (1,n), min_n <= n <= max_n will be used
         :return: return term-document matrix and learn the vocabulary dictionary
         """
-        # text = self.clean()  # return iterable
-        count_vec = CountVectorizer(vocabulary=vb, analyzer=anly, min_df=mindf, max_df=maxdf, ngram_range=ngram, decode_error='ignore', stop_words=stp_w) #stop_words='english'
+        # stop_words='english' # tokenizer=self._tokenizer Only applies if analyzer == 'word'.
+        count_vec = CountVectorizer(vocabulary=vb, analyzer=anly, min_df=mindf, max_df=maxdf, ngram_range=ngram,
+                                    decode_error='ignore', stop_words=stp_w, tokenizer=self._tokenizer)
         data = count_vec.fit_transform(text).toarray()
         return data, count_vec.vocabulary_
 
