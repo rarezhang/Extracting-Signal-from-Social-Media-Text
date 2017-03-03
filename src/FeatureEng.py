@@ -1,10 +1,23 @@
 import nltk, re, string
 import numpy as np
+from scipy.sparse import coo_matrix, hstack
 from sklearn.feature_extraction.text import CountVectorizer
-from utils import join_file_path, file_remove, check_file_exist, check_make_dir, dump_pickle, load_pickle, nested_fun
+# local
 from Clean import Clean
+from utils import pop_var, load_or_make, join_file_path, file_remove, check_file_exist, check_make_dir, dump_pickle, load_pickle, nested_fun
 
-# todo: decorator to save return
+
+dataset = pop_var()
+
+path = join_file_path('../data/feature_engineering/', dataset)
+# general_path_model = join_file_path(path, 'model')
+general_path_feature = join_file_path(path, 'feature')
+check_make_dir(general_path_feature)
+# check_make_dir(general_path_model)
+# assert general_path_feature is not None and general_path_model is not None
+# print(f'path to model: {general_path_model}')
+print(f'path to feature: {general_path_feature}')
+
 
 class FeatureEng(Clean):
     """
@@ -79,7 +92,7 @@ class FeatureEng(Clean):
             #     results.append(result)
             # yield results  # feature values for a single tweet
 
-    # todo emoticons
+    # todo: emoticons
 
 
     # ------------------ feature after clean -----------------
@@ -99,6 +112,7 @@ class FeatureEng(Clean):
         else:
             return 2  # long text
 
+    # @load_or_make(join_file_path())
     def feature_text_length(self, text):
         """
         the length of tweets,
@@ -156,7 +170,7 @@ class FeatureEng(Clean):
         return self.feature_word_ngram(_pos_string(text), vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram, stp_w=stp_w)
 
     # todo: test 'char_wb' or 'char'
-    def feature_char_ngram(self, text, vb=None, anly='char', mindf=0.01, maxdf=0.99, ngram=(3,5), stp_w=None):
+    def feature_char_ngram(self, text, vb=None, anly='char', mindf=0.05, maxdf=0.99, ngram=(3,5), stp_w=None):
         """
         character n-gram [3-5]
         :param anly: Option ‘char_wb’ creates character n-grams only from text inside word boundaries.
@@ -164,7 +178,7 @@ class FeatureEng(Clean):
         """
         return self.feature_word_ngram(text, vb=vb, anly=anly, mindf=mindf, maxdf=maxdf, ngram=ngram, stp_w=stp_w)
 
-    def feature_word_ngram(self, text, vb=None, anly='word', mindf=1, maxdf=0.99, ngram=(1,4), stp_w='english'):
+    def feature_word_ngram(self, text, vb=None, anly='word', mindf=2, maxdf=0.99, ngram=(1,4), stp_w='english'):
         """
         - document frequency threshold for CountVectorizer() -> word n-gram [1-4], won't include punctuations
         - mindf and maxdf:
@@ -181,31 +195,30 @@ class FeatureEng(Clean):
         """
         # stop_words='english' # tokenizer=self._tokenizer Only applies if analyzer == 'word'.
         count_vec = CountVectorizer(vocabulary=vb, analyzer=anly, min_df=mindf, max_df=maxdf, ngram_range=ngram,
-                                    decode_error='ignore', stop_words=stp_w, tokenizer=self._tokenizer)
+                                    decode_error='ignore', stop_words=stp_w, tokenizer=None)#tokenizer=self._tokenizer
         data = count_vec.fit_transform(text).toarray()
         return data, count_vec.vocabulary_
 
 
     # ------------- clustering LDA score -------------
-    # todo: topic related-score of each token
+    # todo: topic related-score of each token, separate class
 
 
     # ---------------- make and combine features --------------
-    feature_funs = (feature_token_based, feature_text_length,
-                    feature_pos_count, feature_pos_ngram,
-                    feature_char_ngram, feature_word_ngram)
+    feature_funs = (feature_token_based, feature_text_length, feature_pos_count,
+                    feature_pos_ngram, feature_char_ngram, feature_word_ngram, )
 
     # todo: way to tuning feature parameters
-    def make_feature(self, path_feature, remake=False, default_vocabulary=True):
+    def make_feature(self, remake=False, default_vocabulary=True):
         """
 
         :return:
         """
-        check_make_dir(path_feature)  # check and make directory
+        # check_make_dir(path_feature)  # check and make directory
 
         for f in self.feature_funs:
             feature_name = f.__name__
-            feature_path = join_file_path(path_feature, feature_name)
+            feature_path = join_file_path(general_path_feature, feature_name)
 
             if remake: file_remove(feature_path)
             if not check_file_exist(feature_path):
@@ -216,7 +229,7 @@ class FeatureEng(Clean):
                 # make feature
                 if 'ngram' in feature_name:
                     vocabulary_name = ''.join((feature_name, '_vocabulary'))
-                    vocabulary_path = join_file_path(path_feature, vocabulary_name)
+                    vocabulary_path = join_file_path(general_path_feature, vocabulary_name)
                     if default_vocabulary:  # dump vocabulary
                         feature, vocabulary = f(self, text)
                         dump_pickle(vocabulary_path, vocabulary)
@@ -225,9 +238,10 @@ class FeatureEng(Clean):
                         feature, _ = f(self, text, vb=vocabulary)
                 else:
                     feature = f(self, text)
-                dump_pickle(feature_path, feature)
+                dump_pickle(feature_path, coo_matrix(feature))
 
-    def combine_feature(self, path_feature, feature_type='ALL', default_vocabulary=True):
+    @load_or_make(join_file_path(general_path_feature, 'doc.feature'))  # very large file
+    def feature_engineering(self, feature_type='ALL', default_vocabulary=True):
         """
         load feature and combine features  -> choose feature types
         :param path_feature:
@@ -235,7 +249,7 @@ class FeatureEng(Clean):
         :return:
         """
         assert (feature_type == 'ALL') or (isinstance(feature_type, list) and len(feature_type)>0)
-        self.make_feature(path_feature, default_vocabulary=default_vocabulary)  # make sure there are features can be loaded later
+        self.make_feature(default_vocabulary=default_vocabulary)  # make sure there are features can be loaded later
 
         result = None
         feature_list = [f.__name__ for f in self.feature_funs]
@@ -247,14 +261,24 @@ class FeatureEng(Clean):
         # create feature path
         for feature_name in feature_list:
             print("loading feature: {}".format(feature_name))
-            feature_path = join_file_path(path_feature, feature_name)
+            feature_path = join_file_path(general_path_feature, feature_name)
             # load feature
             feature = load_pickle(feature_path)
             print("{} shape: {}".format(feature_name, feature.shape))
             # combine feature
-            result = feature if result is None else np.concatenate((result, feature), axis=1)
+            # result = feature if result is None else np.concatenate((result, feature), axis=1)
+            result = feature if result is None else hstack((result, feature))
             # if result is None:
             #     result = feature
             # else:  # concatenate features
             #     result = np.concatenate((result, feature), axis=1)  # column wise
-        return result  # todo dump feature with proper name
+        return coo_matrix(result)
+        # Advantages of the COO format
+            # facilitates fast conversion among sparse formats
+            # permits duplicate entries (see example)
+            # very fast conversion to and from CSR/CSC formats
+        # Disadvantages of the COO format
+            # does not directly support:
+            # arithmetic operations
+            # slicing
+
