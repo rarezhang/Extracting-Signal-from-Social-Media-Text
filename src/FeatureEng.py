@@ -240,8 +240,8 @@ class FeatureEng(Clean):
                     feature = f(self, text)
                 dump_pickle(feature_path, coo_matrix(feature))
 
-    @load_or_make(join_file_path(general_path_feature, 'doc.feature'))  # very large file
-    def feature_engineering(self, feature_type='ALL', default_vocabulary=True):
+    # @load_or_make(join_file_path(general_path_feature, 'doc.feature'))
+    def _feature_engineering(self, feature_type='ALL', default_vocabulary=True):
         """
         load feature and combine features  -> choose feature types
         :param path_feature:
@@ -282,3 +282,6 @@ class FeatureEng(Clean):
             # arithmetic operations
             # slicing
 
+    @load_or_make(join_file_path(general_path_feature, 'doc.feature'))
+    def feature_engineering(self, feature_type='ALL', default_vocabulary=True):
+        return self._feature_engineering(feature_type=feature_type, default_vocabulary=default_vocabulary)
