@@ -113,7 +113,7 @@ class Clean(_TextPrepro):
         return text_string.translate(Clean.translator)
 
     # todo remove all non-ascii; remove all non-utf8 ?  may not
-    def clean(self):
+    def _clean(self, text):
         """
         clean text use token_funs and string_funs
         :return: generator
@@ -125,9 +125,18 @@ class Clean(_TextPrepro):
         string_funs = (self._convert_lower_case, self._convert_negation, self._convert_punctuation)
         # text = self.text
         # self.text, text = tee(self.text)  # keep generator
-        for ts in self.text:  # ts = text_string
+        for ts in text:  # ts = text_string
             token_list = self._tokenizer(ts)  # return list
             token_list = [nested_fun(token_funs, tk) for tk in token_list]
             text_string = ' '.join(token_list)  # return string
             yield nested_fun(string_funs, text_string)
+
+    def clean(self):
+        """
+        keep the ori
+        :return:
+        """
+        text = self.get_text()
+        for ts in self._clean(text):
+            yield ts
 
