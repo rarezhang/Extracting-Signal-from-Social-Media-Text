@@ -245,6 +245,7 @@ def push_var(value):
     :param var:
     :return:
     """
+    file_remove(path_temp)
     dump_pickle(path_temp, value)
 
 def pop_var():
@@ -253,6 +254,5 @@ def pop_var():
     :return:
     """
     value = load_pickle(path_temp)
-    file_remove(path_temp)
     return value
 
