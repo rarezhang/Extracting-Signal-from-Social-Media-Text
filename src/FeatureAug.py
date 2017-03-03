@@ -15,25 +15,44 @@ target_domain = <general, 0, target>
 """
 
 import numpy as np
-from shutil import copy2
-from ReadTextFile import ReadTextFile
-from CleanAndFeature import CleanAndFeature
-from utils import join_file_path, load_pickle, dump_pickle, concatenate_files, check_file_exist
+# from shutil import copy2
+from itertools import tee
+from scipy.sparse import coo_matrix
+# local
+from FeatureEng import FeatureEng
+from utils import pop_var, load_or_make, join_file_path, file_remove, check_file_exist, check_make_dir, dump_pickle, load_pickle
+
+dataset = pop_var()
+
+path = join_file_path('../data/domain_adaptation/', dataset)
+path_source = join_file_path(path, 'source')
+path_target = join_file_path(path, 'target')
+check_make_dir(path_source)
+check_make_dir(path_target)
 
 
-class FeatureAugmentation:
+
+class FeatureAug:
     """
 
     """
 
-    def __init__(self, path_text_source, path_text_target):
+    def __init__(self, text_source, text_target):
         """
 
         :param text_source:
         :param text_target:
         """
-        self.path_text_source = path_text_source
-        self.path_text_target = path_text_target
+        self.text_source = text_source
+        self.text_target = text_target
+
+    def get_text_source(self):
+        text, self.text_source = tee(self.text_source)
+        return text
+
+    def get_text_target(self):
+        text, self.text_target = tee(self.text_target)
+        return text
 
     def _merge_dictionary(self, dic_a, dic_b):
         """
@@ -51,71 +70,99 @@ class FeatureAugmentation:
                 dic_a[key_b] = position
         return dic_a
 
-    def _text_generator(self, path_text, sep='||', col=1):  # todo need code refactoring, do not need create all the feature
-        """
-
-        :param path_text: path to text file
-        :return: text generator
-        """
-        return CleanAndFeature(ReadTextFile(path_text, sep=sep).read_column(col))  # generator
-
-    # todo: consider dump X directly
-    def _make_feature_vocabulary(self, text, path_feature_domain, default_vocabulary=True):
+    def _make_feature_and_vocabulary(self, text, path_domain, default_vocabulary=True):
         """
 
         :param path_feature_domain: path to feature directory
         :return:
         """
-        # text.make_feature(path_feature)  # directory
-        X = text.combine_feature(path_feature_domain, feature_type=['word_ngram'], default_vocabulary=default_vocabulary)
-        path_vocabulary = join_file_path(path_feature_domain, 'feature_word_ngram_vocabulary')
+        fea = FeatureEng(text)
+        f = fea.feature_word_ngram
+
+        path_vocabulary = join_file_path(path_domain, 'feature_word_ngram_vocabulary')
         if default_vocabulary:
+            X, vocabulary = f(text)
+            dump_pickle(path_vocabulary, vocabulary)
+        else:
             vocabulary = load_pickle(path_vocabulary)
-            return X, vocabulary
-        else:
-            return X
+            X, _ = f(text, vb=vocabulary)
+        return X
 
-    def augment_feature(self, path_feature):  # todo need code refactoring
+    @load_or_make(path=join_file_path(path_source, 'X'))
+    def _make_source(self):
         """
 
-        :return: augmented feature matrix
+        :return:
         """
-        text_source = self._text_generator(self.path_text_source)
-        path_feature_source = join_file_path(path_feature, 'source')
-        X_source, vocabulary_source = self._make_feature_vocabulary(text_source, path_feature_source)
+        text = self.get_text_source()
+        return self._make_feature_and_vocabulary(text, path_source, default_vocabulary=True)
 
-        text_target = self._text_generator(self.path_text_target)
-        path_feature_target = join_file_path(path_feature, 'target')
-        X_target, vocabulary_target = self._make_feature_vocabulary(text_target, path_feature_target)
+    @load_or_make(path=join_file_path(path_target, 'X'))
+    def _make_target(self):
+        """
 
+        :return:
+        """
+        text = self.get_text_target()
+        return self._make_feature_and_vocabulary(text, path_target, default_vocabulary=True)
 
-        path_feature_general = join_file_path(path_feature, 'general')
-        vocabulary_path_general = join_file_path(path_feature_general, 'feature_word_ngram_vocabulary')
-        if not check_file_exist(vocabulary_path_general):
-            vocabulary_general = self._merge_dictionary(vocabulary_source, vocabulary_target)  # merge vocabulary
-            dump_pickle(vocabulary_path_general, vocabulary_general)
-        else:
-            vocabulary_general = load_pickle(vocabulary_path_general)
-        # todo: need code refactoring
-        copy2(vocabulary_path_general, join_file_path(path_feature_general, 'source'))
-        copy2(vocabulary_path_general, join_file_path(path_feature_general, 'target'))
+    @load_or_make(path=join_file_path(path, 'feature_word_ngram_vocabulary'))
+    def _make_vocabulary_combine(self):
+        """
+        source + target
+        :return:
+        """
+        path_vocabulary_source = join_file_path(path_source, 'feature_word_ngram_vocabulary')
+        path_vocabulary_target = join_file_path(path_target, 'feature_word_ngram_vocabulary')
+        vocabulary_source = load_pickle(path_vocabulary_source)
+        vocabulary_target = load_pickle(path_vocabulary_target)
+        # combine source and target dictionary
+        vocabulary_combine = self._merge_dictionary(vocabulary_source, vocabulary_target)
+        # override original dic
+        dump_pickle(path_vocabulary_source, vocabulary_combine)
+        dump_pickle(path_vocabulary_target, vocabulary_combine)
+        return vocabulary_combine
 
-        X_general_source = self._make_feature_vocabulary(text_source, join_file_path(path_feature_general, 'source'), default_vocabulary=False)
-        X_general_target = self._make_feature_vocabulary(text_target, join_file_path(path_feature_general, 'target'), default_vocabulary=False)
+    @load_or_make(path=join_file_path(path_source, 'X_combine'))
+    def _make_source_combine(self):
+        """
 
+        :return:
+        """
+        text = self.get_text_source()
+        return self._make_feature_and_vocabulary(text, path_source, default_vocabulary=False)
 
-        # print(X_source.shape, type(X_source))
-        # print(X_general_source.shape, type(X_general_source))
-        m, n = X_source.shape[0], X_target.shape[1]
-        source = np.concatenate((X_general_source, X_source, np.zeros((m,n))), axis=1)  # column wise
+    @load_or_make(path=join_file_path(path_target, 'X_combine'))
+    def _make_target_combine(self):
+        """
 
-        # print(X_target.shape, type(X_target))
-        # print(X_general_target.shape, type(X_general_target))
-        m, n = X_target.shape[0], X_source.shape[1]
-        target = np.concatenate((X_general_target, np.zeros((m,n)), X_target), axis=1)  # column wise
+        :return:
+        """
+        text = self.get_text_target()
+        return self._make_feature_and_vocabulary(text, path_target, default_vocabulary=False)
 
-        # print(source.shape, target.shape)
-        return np.concatenate((source, target), axis=0)  # row wise
+    @load_or_make(path=join_file_path(path, 'doc.feature'))
+    def augment_feature(self):
+            """
+
+            :return: augmented feature matrix
+            """
+            X_source = self._make_source()
+            X_target = self._make_target()
+            self._make_vocabulary_combine()
+            X_source_combine = self._make_source_combine()
+            X_target_combine = self._make_target_combine()
+
+            m, n = X_source.shape[0], X_target.shape[1]
+            source = np.concatenate((X_source_combine, X_source, np.zeros((m,n))), axis=1)  # column wise
+
+            m, n = X_target.shape[0], X_source.shape[1]
+            target = np.concatenate((X_target_combine, np.zeros((m,n)), X_target), axis=1)  # column wise
+
+            print(X_source.shape, X_target.shape)
+            print(X_source_combine.shape, X_target_combine.shape)
+            print(source.shape, target.shape)
+            return coo_matrix(np.concatenate((source, target), axis=0))
 
 
 
