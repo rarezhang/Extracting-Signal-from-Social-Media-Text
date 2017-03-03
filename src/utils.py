@@ -122,7 +122,8 @@ def files_remove(path):
     """
     assert os.path.isdir(path), 'remove all files in a directory'
     files = [os.path.join(path, f) for f in os.listdir(path)]
-    for f in files: os.remove(f)
+    if len(files) != 0:
+        for f in files: os.remove(f)
 
 
 
@@ -231,4 +232,27 @@ def nested_fun(funs, value):
     :return: f1(f2(value))
     """
     return reduce(lambda res, f: f(res), funs, value)
+
+
+######################################################
+# push and pop variable
+######################################################
+path_temp = '../data/tmp.txt'
+def push_var(value):
+    """
+
+    :param path:
+    :param var:
+    :return:
+    """
+    dump_pickle(path_temp, value)
+
+def pop_var():
+    """
+
+    :return:
+    """
+    value = load_pickle(path_temp)
+    file_remove(path_temp)
+    return value
 
