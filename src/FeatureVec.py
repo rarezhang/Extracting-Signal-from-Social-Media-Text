@@ -3,19 +3,22 @@
 """
 import logging
 import numpy as np
+from scipy.sparse import coo_matrix
 from gensim.models.word2vec import Word2Vec
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import TfidfVectorizer
 # local
 from Clean import Clean
-from utils import load_or_make, check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
-
+from utils import pop_var, load_or_make, check_make_dir, check_file_exist, dump_pickle, load_pickle, join_file_path, files_remove
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-general_path_model = '../data/word_vector/model/'
-general_path_feature = '../data/word_vector/feature/'
-assert general_path_feature is not None and general_path_model is not None
+dataset = pop_var()
+path = join_file_path('../data/word_embedding/', dataset)
+general_path_model = join_file_path(path, 'model')
+general_path_feature = join_file_path(path, 'feature')
+check_make_dir(general_path_feature);check_make_dir(general_path_model)
+# assert general_path_feature is not None and general_path_model is not None
 print(f'path to model: {general_path_model}')
 print(f'path to feature: {general_path_feature}')
 
@@ -39,7 +42,8 @@ class FeatureVec(Clean):
         self.idf_model = None
         self.vector_size = 10  # todo add to argument
         if rebuild:
-            files_remove(general_path_feature); files_remove(general_path_model)
+            files_remove(general_path_feature)
+            files_remove(general_path_model)
         self.train_word2vector_model()
         self.train_idf_model()
 
@@ -197,7 +201,7 @@ class FeatureVec(Clean):
 
     # -------------------------------------------------------------
     @load_or_make(path=join_file_path(general_path_feature, 'doc.feature'))
-    def feature_sentence_embedding(self, text):
+    def feature_embedding(self, text):
         """
 
         :param text: testing data
@@ -216,7 +220,7 @@ class FeatureVec(Clean):
                 sentence_vec += vec
             # document feature
             document_vec = sentence_vec if document_vec is None else np.concatenate((document_vec, sentence_vec), axis=0)
-        return document_vec
+        return coo_matrix(document_vec)
 
 
 
