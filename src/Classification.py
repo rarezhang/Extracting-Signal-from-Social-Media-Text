@@ -1,8 +1,9 @@
 """
 Classification
 """
-import os
+
 import numpy as np
+from scipy.sparse import coo_matrix
 from sklearn.svm import LinearSVC, SVC
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, Perceptron
@@ -33,10 +34,14 @@ class Classification:
         set output file directory path
         """
         check_make_dir(output_directory)  # check and make output dir
+        assert isinstance(X, (np.ndarray, coo_matrix)), \
+            'check the data type of the feature matrix, should be numpy array or sparse matrix '
+        if not isinstance(X, (np.ndarray, np.generic) ):
+            X = X.toarray()
 
         if normalize:
             X = self._normalize_matrix(X)
-        assert isinstance(X, np.ndarray), 'check the data type of the feature matrix, should be numpy array'
+
         try:
             number_records = len(Y)
             Y = np.asarray(Y)
@@ -50,7 +55,7 @@ class Classification:
         self.X = X
         self.Y = Y
 
-    def _write(self, path, content):
+    def _write(self, path, content): # todo print to screen
         """
 
         :param path:
@@ -70,15 +75,22 @@ class Classification:
         return X_std * (max_range - min_range) + min_range
 
     classifiers = (
-        LinearSVC(), SVC(kernel="linear", C=0.025), SVC(gamma=2, C=1),
-        MultinomialNB(), GaussianNB(), BernoulliNB(),
-        LogisticRegression(), Perceptron(),
-        RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1), ExtraTreesClassifier(), AdaBoostClassifier(),
+        LinearSVC(),
+        SVC(kernel="linear", C=0.025), SVC(gamma=2, C=1),
+        MultinomialNB(),
+        GaussianNB(), # X: array-like
+        BernoulliNB(),
+        LogisticRegression(),
+        Perceptron(),
+        RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+        ExtraTreesClassifier(),
+        AdaBoostClassifier(),
         DecisionTreeClassifier(max_depth=5),
         KNeighborsClassifier(3),
-        GaussianProcessClassifier(1.0 * RBF(1.0), warm_start=True),
+        GaussianProcessClassifier(1.0 * RBF(1.0), warm_start=True), # X: array-like
         MLPClassifier(alpha=1),
-        QuadraticDiscriminantAnalysis())
+        QuadraticDiscriminantAnalysis()  # X: array-like
+    )
 
     def classifier_comparison_cross_validation(self, model_list, k=10):
         """
