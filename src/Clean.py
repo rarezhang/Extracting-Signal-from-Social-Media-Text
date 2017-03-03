@@ -11,6 +11,7 @@ class Clean(_TextPrepro):
     negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
     # tknz = nltk.tokenize.TweetTokenizer()
     lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
+    stemmer = nltk.stem.porter.PorterStemmer()
     translator = str.maketrans('', '', string.punctuation)
 
     # def __init__(self, text):
@@ -69,16 +70,23 @@ class Clean(_TextPrepro):
         return re.sub('([a-zA-Z])\\1{2,}', '\\1\\1', token)
 
     @staticmethod
-    def _convert_lemmatization(token):
+    def _convert_lemmatization(token, stem=True):
         """
         stem and lemmatizate a token, nltk can only process 'ascii' codec
         :param token:
         :return:
         """
-        try:
-            return Clean.lmtzr.stem(token)
-        except:
-            return token
+        if stem:
+            try:
+                return Clean.stemmer.stem(token)
+            except:
+                return token
+        else:
+            try:
+                return Clean.lmtzr.stem(token)
+            except:
+                return token
+
 
     @staticmethod
     def _convert_lower_case(text_string):
