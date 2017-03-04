@@ -1,14 +1,14 @@
-import nltk
 from itertools import tee
+from ._Tokenizer import _Tokenizer
 
 
-class _TextPrepro:
+class _TextPrepro(_Tokenizer):
     """
 
     """
     # punctuation = string.punctuation
     # negation_pattern = r'\b(?:not|never|no|can\'t|couldn\'t|isn\'t|aren\'t|wasn\'t|weren\'t|don\'t|doesn\'t| didn\'t)\b[\w\s]+[^\w\s]'
-    tknz = nltk.tokenize.TweetTokenizer()
+    # tknz = nltk.tokenize.TweetTokenizer()
     # lmtzr = nltk.stem.wordnet.WordNetLemmatizer()
 
     def __init__(self, text):
@@ -19,14 +19,6 @@ class _TextPrepro:
         self.text = text
 
     # ----------------- helper methods ------------------------------------
-    @staticmethod
-    def _tokenizer(text_string):  # todo put this into parent class
-        """
-        tokenize each single tweet
-        :param text_string:
-        :return: list of token
-        """
-        return _TextPrepro.tknz.tokenize(text_string)
 
     def get_text(self):
         """
