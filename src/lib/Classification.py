@@ -19,8 +19,6 @@ from sklearn.metrics import classification_report, precision_recall_fscore_suppo
 from .utils import join_file_path, check_file_exist, check_make_dir, dump_pickle, load_pickle
 
 
-
-
 # todo: parameter for classification model
 
 
