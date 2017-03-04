@@ -18,7 +18,7 @@ import numpy as np
 from itertools import tee
 from scipy.sparse import coo_matrix
 # local
-from .FeatureEng import FeatureEng
+from ._FeatureMake import _FeatureMake
 from .utils import pop_var, load_or_make, join_file_path, check_make_dir, dump_pickle, load_pickle
 
 dataset = pop_var()
@@ -30,8 +30,7 @@ check_make_dir(path_source)
 check_make_dir(path_target)
 
 
-
-class FeatureAug:
+class FeatureAug(_FeatureMake):
     """
 
     """
@@ -75,8 +74,8 @@ class FeatureAug:
         :param path_feature_domain: path to feature directory
         :return:
         """
-        fea = FeatureEng(text)
-        f = fea.feature_word_ngram
+        # fea = FeatureEng(text)
+        f = self.feature_word_ngram
 
         path_vocabulary = join_file_path(path_domain, 'feature_word_ngram_vocabulary')
         if default_vocabulary:
@@ -158,9 +157,9 @@ class FeatureAug:
             m, n = X_target.shape[0], X_source.shape[1]
             target = np.concatenate((X_target_combine, np.zeros((m,n)), X_target), axis=1)  # column wise
 
-            print(X_source.shape, X_target.shape)
-            print(X_source_combine.shape, X_target_combine.shape)
-            print(source.shape, target.shape)
+            # print(X_source.shape, X_target.shape)
+            # print(X_source_combine.shape, X_target_combine.shape)
+            # print(source.shape, target.shape)
             return coo_matrix(np.concatenate((source, target), axis=0))
 
 
