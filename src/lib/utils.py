@@ -2,8 +2,9 @@
 utils
 """
 
-import os, pickle, fileinput, nltk, errno, time
+import os, pickle, fileinput, nltk, errno, time, pytz
 from functools import reduce
+from datetime import datetime
 
 
 ######################################################
@@ -67,6 +68,24 @@ def load_or_make(path):
             return data
         return wrap_fun
     return decorator_fun
+
+
+######################################################
+# time
+######################################################
+def time_now(timezone='US/Mountain'):
+    """
+    Get the current time, in a specific timezone:
+    :param timezone:
+    :return:
+    """
+    """
+    Get list of timezones
+    for tz in pytz.all_timezones:
+        print tz
+    """
+    return datetime.now(pytz.timezone(timezone)).strftime('%Y-%m-%d %H:%M:%S')
+
 ######################################################
 # files and paths
 ######################################################
