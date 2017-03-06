@@ -1,6 +1,6 @@
 from lib.utils import push_var
 # dataset = 'asthma'
-dataset = 'test'
+dataset = 'asthma'
 push_var(dataset)
 
 
@@ -40,27 +40,13 @@ print(type(X))
 # X = X.toarray()
 # print(type(X))
 
-"""
+
 #######################################################################
 # Classification
 
-from sklearn.svm import LinearSVC, SVC
-from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
-from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.gaussian_process import GaussianProcessClassifier
-from sklearn.gaussian_process.kernels import RBF
-from sklearn.neural_network import MLPClassifier
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+if __name__ == '__main__':
+    output_directory = general_output + dataset
+    clf = Classification(output_directory, X, y, normalize=True)
+    clf.classifier_comparison_cross_validation(k=10)
 
-classifiers = (
-    Perceptron(),
-)
-
-output_directory = general_output + dataset
-clf = Classification(output_directory, X, y, normalize=True)
-clf.classifier_comparison_cross_validation(classifiers, k=3)
-"""
 
