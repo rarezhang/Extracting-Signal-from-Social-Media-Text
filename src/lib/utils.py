@@ -5,7 +5,7 @@ utils
 import os, pickle, fileinput, nltk, errno, time, pytz
 from functools import reduce
 from datetime import datetime
-
+from winsound import Beep
 
 ######################################################
 # decorator functions
@@ -264,7 +264,7 @@ def push_var(value):
     :param var:
     :return:
     """
-    file_remove(path_temp)
+    # file_remove(path_temp)
     dump_pickle(path_temp, value)
 
 
@@ -277,3 +277,8 @@ def pop_var():
     # file_remove(path_temp)
     return value
 
+######################################################
+# sound
+######################################################
+def alarm_when_finish():
+    Beep(300, 2000)  # Sound alarm when code finishes
