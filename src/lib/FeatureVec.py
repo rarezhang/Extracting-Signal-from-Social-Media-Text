@@ -40,7 +40,7 @@ class FeatureVec(Clean):
         self.w2v_model = None
         self.lr_model = None
         self.idf_model = None
-        self.vector_size = 10  # todo add to argument
+        self.vector_size = 100  # todo add to argument
         if rebuild:
             files_remove(general_path_feature)
             files_remove(general_path_model)
