@@ -4,6 +4,8 @@ Classification
 
 import numpy as np
 from scipy.sparse import coo_matrix
+
+
 from sklearn.svm import LinearSVC, SVC
 from sklearn.naive_bayes import MultinomialNB, GaussianNB , BernoulliNB
 from sklearn.linear_model import LogisticRegression, Perceptron
@@ -17,6 +19,7 @@ from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.model_selection import KFold, train_test_split, GridSearchCV
 from sklearn.metrics import classification_report, precision_recall_fscore_support, make_scorer
 from sklearn.metrics import f1_score, recall_score, precision_score, accuracy_score
+
 from .utils import time_now, pop_var, join_file_path, check_file_exist, check_make_dir, dump_pickle, load_pickle
 
 
@@ -27,27 +30,26 @@ check_make_dir(path)
 print(f'path to output: {path}')
 
 
-
-classifiers = (
+Models = (
     # SVM
-    SVC(kernel="linear"),  # linear SVM
-    SVC(kernel="rbf"),  # RBF kernel
-    SVC(kernel='poly'),  # polynomial kernel
+    # SVC(kernel="linear"),  # linear SVM
+    SVC(C=1000, kernel="rbf", gamma=0.001),  # RBF kernel
+    # SVC(kernel='poly'),  # polynomial kernel
 
     # Naive Bayes
     MultinomialNB(),
     # for multinomially distributed data, one of the two classic naive Bayes variants used in text classification
     # GaussianNB(), # X: array-like, the features is assumed to be Gaussian
-    BernoulliNB(),
+    # BernoulliNB(alpha=0),
     # each features is assumed to be a binary-valued(binarize its input (depending on the binarize parameter))
 
     # Linear model
-    LogisticRegression(),
+    LogisticRegression(penalty='l1', solver='liblinear'),
     # “lbfgs”, “sag”(very large dataset) and “newton-cg” (L2 penalization); converge faster for high dimensional data
     # Perceptron(),
 
     # Tree
-    DecisionTreeClassifier(max_depth=5),
+    DecisionTreeClassifier(criterion='entropy', max_depth=None, max_features=None, min_samples_split=2),
 
     # Neighbors
     # KNeighborsClassifier(3),
@@ -56,17 +58,19 @@ classifiers = (
     # GaussianProcessClassifier(1.0 * RBF(1.0), warm_start=True), # X: array-like, lose efficiency in high dimensional spaces
 
     # Neural Network
-    MLPClassifier(alpha=1),  # Multi-layer Perceptron
+    MLPClassifier(activation='tanh', hidden_layer_sizes=10, solver='lbfgs', warm_start=True),  # Multi-layer Perceptron
 
     # Discriminant Analysis
     # QuadraticDiscriminantAnalysis(),  # X: array-like
 
     # Ensemble
-    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+    RandomForestClassifier(n_estimators=20, warm_start=True),
     # ExtraTreesClassifier(),
-    AdaBoostClassifier(base_estimator=None),
-# fit a sequence of weak learners on repeatedly modified versions of the data
+    AdaBoostClassifier(base_estimator=None),   #base_estimator=DecisionTreeClassifier
+    # fit a sequence of weak learners on repeatedly modified versions of the data
 )
+
+
 
 
 class Classification:
@@ -124,8 +128,7 @@ class Classification:
         X_std = (X - X.min(axis=ax)) / (X.max(axis=ax) - X.min(axis=ax))
         return X_std * (max_range - min_range) + min_range
 
-
-    def classifier_comparison_cross_validation(self, model_list=classifiers, k=10):
+    def classifier_comparison_cross_validation(self, work_name=None, k=10):
         """
 
         :param X: feature matrix. numpy array, dtype=int64
@@ -139,13 +142,14 @@ class Classification:
         label_type = list(set(self.Y))  # classification_report(labels=list)
 
         # output file
-        output_path = join_file_path(path, 'k_fold_cross_validation')
+        output_path = join_file_path(path, f'k_fold_cross_validation_{work_name}')
 
         # define k fold cross validation
-        kf = KFold(n_splits=k, shuffle=True, random_state=1)  # todo: parameter tuning
+        kf = KFold(n_splits=k, shuffle=True, random_state=1)
 
         to_print = f'{time_now()} \n '
-        for model in model_list:
+
+        for model in Models:
             # define classifier
             classifier = model
             # model name
@@ -158,7 +162,7 @@ class Classification:
             PRE, REC, F, SUP = np.zeros(len(label_type)), np.zeros(len(label_type)),np.zeros(len(label_type)),np.zeros(len(label_type))
             for train_index, test_index in kf.split(self.X):  # kf.split() Generate indices to split data into training and test set.
                 # make training and testing data
-                X_train, X_test = self.X[train_index], self.X[test_index]  # no error
+                X_train, X_test = self.X[train_index], self.X[test_index]
                 Y_train, Y_test = self.Y[train_index], self.Y[test_index]
                 # fit model
                 classifier.fit(X_train, Y_train)
@@ -185,11 +189,13 @@ class Classification:
             for i in range(len(label_type)):
                 label, pre, rec, f, sup = str(label_type[i]), str(PRE[i]), str(REC[i]), str(F[i]), str(SUP[i])
                 to_print += ' '.join((label, '\t', pre, '\t', rec, '\t', f, '\t', sup, '\n'))
+
             to_print += '-' * 60 + '\n\n\n\n'
             print(to_print)
             self._write(output_path, to_print)
+            to_print = ''
 
-    def predict_label(self, XX, model):
+    def predict_label(self, model, XX, YY=None):
         """
 
         :param X: training feature matrix, numpy array, dtype=int64
@@ -206,6 +212,7 @@ class Classification:
             XX = self._normalize_matrix(XX)
         # define classifier
         classifier = model
+        to_print = str(model) + '\n'
         if not check_file_exist:
             classifier.fit(self.X, self.Y)
             dump_pickle(classifier_path, classifier)
@@ -214,10 +221,15 @@ class Classification:
             # classifier.predict: return array, shape = [n_samples]
             # Predicted class label per sample.
             labels = classifier.predict(XX)
-            to_print = str(model) + '\n'
             for lab in labels:
                 to_print += str(lab) + '\n'
+        if YY is not None:
+            to_print += f'The scores are computed on the full testing set: \n'
+            to_print += f'average accuracy: {accuracy_score(YY, labels, normalize=True)} \n'
+            to_print += classification_report(YY, labels)
+            to_print += '-' * 60 + '\n\n\n\n'
             self._write(output_path, to_print)
+
 
     def _set_scores(self, scores, positive_label):
         """
@@ -231,7 +243,7 @@ class Classification:
         f1 = make_scorer(f1_score, pos_label=positive_label)
         recall = make_scorer(recall_score, pos_label=positive_label)
         precision = make_scorer(precision_score, pos_label=positive_label)
-        accuracy = make_scorer(accuracy_score)
+        accuracy = make_scorer(accuracy_score, normalize=True)
         scores_list = [f1, recall, precision, accuracy]
         if scores is not 'ALL':
             # scores_list = set(sum([[fea for fea in feature_list if type in fea] for type in feature_type], []))
@@ -256,9 +268,9 @@ class Classification:
 
         # output file
         model_name = str(model).split('(')[0]
-        output_path = join_file_path(path, f'{model_name}_parameter_tuning')
+        output_path = join_file_path(path, f'parameter_tuning_{model_name}')
 
-        # Split the data set in two equal parts
+        # Split the data set in two parts
         X_train, X_test, Y_train, Y_test = train_test_split(
             self.X, self.Y, test_size=tz, random_state=5)
 
@@ -277,8 +289,9 @@ class Classification:
             for mean, std, par in zip(means, stds, params):
                 to_print += f'mean: {mean}, std: {std*2} for par: {par} \n'
             to_print += f'The model is trained on the full training set. \n' \
-                        f'The scores are computed on the full testing set, test size: {tz} \n'
+                        f'The scores are computed on the full developing set, test size: {tz} \n'
             Y_pred = classifier.predict(X_test)
+            to_print += f'average accuracy: {accuracy_score(Y_test, Y_pred, normalize=True)} \n'
             to_print += classification_report(Y_test, Y_pred)
             to_print += '-' * 60 + '\n\n\n\n'
             print(to_print)
