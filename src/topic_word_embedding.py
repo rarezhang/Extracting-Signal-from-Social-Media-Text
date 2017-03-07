@@ -1,8 +1,8 @@
 """
 test the FeatureVec Class
 """
-from lib.utils import push_var
-dataset = 'test'
+from lib.utils import push_var, alarm_when_finish
+dataset = 'asthma'
 push_var(dataset)
 
 
@@ -27,25 +27,28 @@ else:
     path = '../data/training/txte.csv'  # todo test data
 print(path)
 
-# data for model training
-rtf = ReadTextFile(path, sep='||')
-text = rtf.read_column(1)
-clean = Clean(text)
-text = clean.clean()
-y = rtf.read_column(0)
 
-# general_path_model = '../data/word_vector/model/'
-# general_path_feature = '../data/word_vector/feature/'
-vec = FeatureVec(text, y, rebuild=True)
+#######################################################################
+if __name__ == '__main__':
+    # data for model training
+    rtf = ReadTextFile(path, sep='||')
+    text = rtf.read_column(1)
+    clean = Clean(text)
+    text = clean.clean()
+    y = rtf.read_column(0)
 
-# ====================================================================
-# test file
-rtf = ReadTextFile(path, sep='||')
-text = rtf.read_column(1)
-clean = Clean(text)
-clean_text = clean.clean()
-v = vec.feature_embedding(clean_text)
-print(v.shape)
-# print(v)
+    # general_path_model = '../data/word_vector/model/'
+    # general_path_feature = '../data/word_vector/feature/'
+    vec = FeatureVec(text, y, rebuild=True)
+
+    # ====================================================================
+    # test file
+    rtf = ReadTextFile(path, sep='||')
+    text = rtf.read_column(1)
+    clean = Clean(text)
+    clean_text = clean.clean()
+    X = vec.feature_embedding(clean_text)
+    print(X.shape)
+
 
 
