@@ -1,66 +1,8 @@
 
-"""
-A search consists of:
-- an estimator
-    + SVC: SVM for classification
-        * linear
-        * RBF kernel (default)
-        * polynomial kernel (degree = ?)
-    + naive bayes (different naive Bayes classifiers differ mainly by the assumptions regarding the distribution of P(x_i|y).)
-        * MultinomialNB
-- a parameter space;
-- a method for searching or sampling candidates;
-    + GridSearchCV: exhaustively considers all parameter combinations
-    + RandomizedSearchCV: sample a given number of candidates from a parameter space with a specified distribution
-- a cross-validation scheme
-- a score function.
-"""
-
-
 from lib.utils import push_var
-# dataset = 'asthma'
 dataset = 'asthma'
 push_var(dataset)
 
-
-from lib.ReadTextFile import ReadTextFile
-from lib.FeatureEng import FeatureEng
-from lib.Classification import Classification
-
-
-# main
-general_text = '../data/training/'
-
-# general_output = '../data/result/'
-
-
-# training data path
-if dataset == 'ecig':
-    path = f'{general_text}ecig_training_topic.csv'
-elif dataset == 'asthma':
-    path = f'{general_text}asthma_training_topic.csv'
-else:
-    path = '../data/training/txte.csv'  # todo test data
-
-
-rtf = ReadTextFile(path, sep='||')
-text = rtf.read_column(1)  # generator, column 1: text
-
-#######################################################################
-
-fea = FeatureEng(text)  # todo add remake to class
-X = fea.feature_engineering(feature_type=['feature_word_ngram'])  # only use word ngram
-
-y = rtf.read_column(0)
-# y = list(y)
-# from sklearn import preprocessing
-# lb = preprocessing.LabelBinarizer()
-# lb.fit(y)
-# print(y)
-
-
-#######################################################################
-# Classification
 
 from sklearn.svm import LinearSVC, SVC
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
@@ -72,6 +14,36 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+
+from lib.ReadTextFile import ReadTextFile
+from lib.FeatureEng import FeatureEng
+from lib.Classification import Classification
+
+
+# main
+general_text = '../data/training/'
+
+# training data path
+if dataset == 'ecig':
+    path = f'{general_text}ecig_training_topic.csv'
+elif dataset == 'asthma':
+    path = f'{general_text}asthma_training_topic.csv'
+else:
+    path = '../data/training/txte.csv'  # todo test data
+
+# read file
+rtf = ReadTextFile(path, sep='||')
+text = rtf.read_column(1)  # generator, column 1: text
+y = rtf.read_column(0)
+
+# get feature
+fea = FeatureEng(text)  # todo add remake to class
+X = fea.feature_engineering(feature_type=['feature_word_ngram'])  # only use word ngram
+
+
+
+#######################################################################
+# Classification
 
 if __name__ == '__main__':
     classifiers = (
@@ -96,9 +68,9 @@ if __name__ == '__main__':
         # Neural Network
         MLPClassifier(),  # Multi-layer Perceptron
         # Ensemble
-        RandomForestClassifier(),
+        # RandomForestClassifier(),
         # ExtraTreesClassifier(),
-        AdaBoostClassifier(base_estimator=None),
+        # AdaBoostClassifier(),
     )
 
     parameters = (
@@ -117,7 +89,7 @@ if __name__ == '__main__':
         [{'solver': ['newton-cg', 'lbfgs', 'sag'], 'C': [1, 10, 100, 1000], 'warm_start': [True]},
          {'solver': ['liblinear'], 'penalty': ['l1', 'l2']}],
         # Perceptron
-        [{'penalty': [None, 'l2', 'k1', 'elasticnet'], 'n_iter': [5, 20, 50, 100]}],
+        [{'penalty': [None, 'l2', 'l1', 'elasticnet'], 'n_iter': [5, 20, 50, 100]}],
         # Tree
         [{'criterion': ['gini', 'entropy'], 'max_features': ['auto', 'sqrt', 'log2', None], 'max_depth': [None, 3, 4, 5, 6], 'min_samples_split': [2, 0.1, 0.2]}],
         # MLPClassifier
@@ -125,9 +97,14 @@ if __name__ == '__main__':
         # RandomForestClassifier
         [{'n_estimators': [10, 20, 30], 'warm_start': [True]}],
         # AdaBoostClassifier
-        # todo: wait the best classifier as base_estimator
-        # [{''}]
+        # SAMME.R: real boosting algorithm. base_estimator must support calculation of class probabilities
+        [{'algorithm':['SAMME'], 'base_estimator': [DecisionTreeClassifier(criterion='entropy', max_depth=None, max_features=None, min_samples_split=2)]},
+         {'algorithm':['SAMME.R'], 'base_estimator': [SVC(C=1000, kernel="rbf", gamma=0.001, probability=True)]},
+         {'algorithm':['SAMME.R'], 'base_estimator': [LogisticRegression(penalty='l1', solver='liblinear')]}
+         ],
     )
+
+    assert len(classifiers) == len(parameters), 'check classifiers - parameters pairs'
     clf = Classification(X, y, normalize=True)
 
     for c, p in zip(classifiers, parameters):
