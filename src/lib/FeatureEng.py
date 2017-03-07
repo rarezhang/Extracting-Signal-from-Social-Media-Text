@@ -100,6 +100,6 @@ class FeatureEng(Clean, _FeatureMake):
             # arithmetic operations
             # slicing
 
-    @load_or_make(join_file_path(path, 'doc.feature'))
+    # @load_or_make(join_file_path(path, 'doc.feature')) #todo: do not save or save with feature_type name
     def feature_engineering(self, feature_type='ALL', default_vocabulary=True):
         return self._feature_engineering(feature_type=feature_type, default_vocabulary=default_vocabulary)
